@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#1a4d2e" />
+    <title>Spud Squad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <div class="stage">
+        <canvas id="game"></canvas>
+        <div id="hud" hidden>
+          <div class="hud-chip" id="potato-chip">
+            <img src="/art/potato.png" alt="" />
+            <span id="potato-count">0</span>
+          </div>
+          <div class="hud-chip" id="hearts"></div>
+          <div class="hud-chip kid-chip">
+            <span id="kid-name">Boots</span>
+          </div>
+          <button type="button" id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
+        </div>
+
+        <div id="overlay" class="overlay">
+          <section class="panel title-panel" data-screen="title">
+            <img class="family-hero" src="/art/family.jpg" alt="The three kids" />
+            <p class="eyebrow">The kids vs the leprechauns</p>
+            <h1>Spud Squad</h1>
+            <p class="tagline">
+              Jump. Grab every potato. Dodge those mean little leprechauns. Race home to the red
+              door.
+            </p>
+            <button type="button" class="cta" id="btn-play">Play</button>
+          </section>
+
+          <section class="panel pick-panel" data-screen="pick" hidden>
+            <p class="eyebrow">Pick who runs</p>
+            <h2>The squad</h2>
+            <div class="cards">
+              <button type="button" class="kid-card" data-kid="boots">
+                <img src="/art/girl-boots.png" alt="Boots" />
+                <strong>Boots</strong>
+                <span>Cowboy-boot super jump. Bounce even higher off a hat.</span>
+              </button>
+              <button type="button" class="kid-card" data-kid="ace">
+                <img src="/art/boy-ace.png" alt="Ace" />
+                <strong>Ace</strong>
+                <span>Extra heart. A stomp keeps leprechauns down longer.</span>
+              </button>
+              <button type="button" class="kid-card" data-kid="pip">
+                <img src="/art/toddler-pip.png" alt="Pip" />
+                <strong>Pip</strong>
+                <span>Fastest and smallest. Squeezes under low ceilings.</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="panel end-panel" data-screen="pause" hidden>
+            <h2>Paused</h2>
+            <p class="tagline">Thumbs off. Potatoes still count when you come back.</p>
+            <button type="button" class="cta" id="btn-resume">Keep running</button>
+            <button type="button" class="ghost" id="btn-quit">Change kid</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="win" hidden>
+            <img class="end-art" src="/art/potato.png" alt="" />
+            <h2>Home!</h2>
+            <p class="tagline" id="win-copy">You brought the potatoes back to the red door.</p>
+            <button type="button" class="cta" id="btn-again">Run it again</button>
+            <button type="button" class="ghost" id="btn-other">Pick another kid</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="lose" hidden>
+            <img class="end-art lep" src="/art/leprechaun.png" alt="" />
+            <h2>Caught</h2>
+            <p class="tagline">The leprechauns got the last laugh. Try another kid — or the same one.</p>
+            <button type="button" class="cta" id="btn-retry">Try again</button>
+            <button type="button" class="ghost" id="btn-lose-pick">Change kid</button>
+          </section>
+        </div>
+      </div>
+
+      <div id="controls" hidden>
+        <div class="dpad">
+          <button type="button" id="btn-left" class="pad" aria-label="Left">◀</button>
+          <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
+        </div>
+        <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
