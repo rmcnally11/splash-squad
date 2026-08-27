@@ -9,7 +9,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
   --pad: 88px;
-  --jump: 108px;
+  --jump: 128px;
   font-family: "Fredoka", "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
   color: var(--cream);
   background: var(--grass-2);
@@ -385,7 +385,9 @@ h2 {
 .jump {
   width: var(--jump);
   height: var(--jump);
-  border-radius: 50%;
+  min-width: var(--jump);
+  min-height: var(--jump);
+  border-radius: 24px;
   background: var(--barn);
   color: white;
   box-shadow: 0 7px 0 #7a1224;
