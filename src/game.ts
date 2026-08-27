@@ -1225,21 +1225,7 @@ export class SpudGame {
     const y = -this.pupH - 4 + bob;
     const w = this.pupW + 4;
     const h = this.pupH + 6;
-    if (this.art.photoDog) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(0, -h * 0.48, w * 0.48, h * 0.5, 0, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(this.art.dog, x, y, w, h);
-      ctx.restore();
-      ctx.strokeStyle = "#14110d";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.ellipse(0, -h * 0.48, w * 0.48, h * 0.5, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    } else {
-      paintOutlined(ctx, this.art.dog, x, y, w, h);
-    }
+    paintOutlined(ctx, this.art.dog, x, y, w, h);
     ctx.restore();
   }
 
@@ -1262,21 +1248,7 @@ export class SpudGame {
     const y = -this.kid.h - 4 + run * 2;
     const w = this.kid.w + 8;
     const h = this.kid.h + 6;
-    if (this.art.photoKids[this.kid.id]) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(0, -h * 0.48, w * 0.46, h * 0.5, 0, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(img, x, y, w, h);
-      ctx.restore();
-      ctx.strokeStyle = "#14110d";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(0, -h * 0.48, w * 0.46, h * 0.5, 0, 0, Math.PI * 2);
-      ctx.stroke();
-    } else {
-      paintOutlined(ctx, img, x, y, w, h);
-    }
+    paintOutlined(ctx, img, x, y, w, h);
     ctx.restore();
   }
 }

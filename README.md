@@ -32,7 +32,7 @@ Collect potatoes for ammo. Gold spuds give more.
 | **Luke** | Ground pound. Extra heart. |
 | **Connor** | Dash. Fastest. Fits under beams. |
 
-Cartoons run by default. On the kid picker, tap **Add photo** to put a real face on that kid. Tap **Add dog photo** on Pipey to put your dog in the run. Tap the title photo to swap the family shot. Photos stay on this phone and you can switch back to cartoons anytime.
+The family photo is baked in: title shot plus Mallory, Luke, and Connor portraits on the picker and HUD. In the run they use the cartoon bodies that match those outfits.
 
 **Pipey** follows whoever you pick, snags nearby potatoes, and barks nearby leprechauns flat.
 

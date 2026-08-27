@@ -2,7 +2,6 @@ import { sfx } from "./audio.ts";
 import { SpudGame, type HudInfo } from "./game.ts";
 import { bindControls, createInput, releaseAll } from "./input.ts";
 import { KIDS, type KidId } from "./level.ts";
-import { clearPhoto, loadImage, loadPhotoUrls, savePhoto, type PhotoSlot } from "./photos.ts";
 import { loadProgress, recordClear, saveProgress, type Progress } from "./progress.ts";
 import { loadArt, type Art } from "./sprites.ts";
 import "./style.css";
@@ -29,8 +28,13 @@ const winCopy = document.getElementById("win-copy")!;
 const clearCopy = document.getElementById("clear-copy")!;
 const playBtn = document.getElementById("btn-play") as HTMLButtonElement | null;
 const bestLine = document.getElementById("best-line");
-const photoNote = document.getElementById("photo-note");
 const winKid = document.getElementById("win-kid") as HTMLImageElement | null;
+
+const PORTRAITS: Record<KidId, string> = {
+  boots: "/art/portrait-mallory.png",
+  ace: "/art/portrait-luke.png",
+  pip: "/art/portrait-connor.png",
+};
 
 let picked: KidId = "boots";
 let worldId = 0;
@@ -38,7 +42,6 @@ let lastClearWasFinal = false;
 let screen = "boot";
 let game: SpudGame | null = null;
 let art: Art | null = null;
-let cartoons: Pick<Art, "boots" | "ace" | "pip" | "family" | "dog"> | null = null;
 let progress: Progress = loadProgress();
 picked = progress.lastKid;
 
@@ -77,39 +80,11 @@ function paintWorlds(): void {
   }
 }
 
-function faceFor(id: KidId): string {
-  if (!art) return "/art/girl-boots.png";
-  if (id === "ace") return art.ace.src;
-  if (id === "pip") return art.pip.src;
-  return art.boots.src;
-}
-
 function paintFaces(): void {
-  if (!art) return;
-  const family = document.querySelector<HTMLImageElement>(".family-hero");
-  if (family) family.src = art.family.src;
-  for (const hero of document.querySelectorAll<HTMLImageElement>(".win-family")) {
-    hero.src = art.family.src;
-  }
-  for (const card of document.querySelectorAll<HTMLElement>(".kid-card")) {
-    if (card.classList.contains("dog-card")) continue;
-    const id = card.dataset.kid as KidId;
-    const img = card.querySelector("img");
-    if (img) img.src = faceFor(id);
-    card.classList.toggle("costumed", Boolean(art.photoKids[id]));
-    const clear = card.querySelector<HTMLButtonElement>(".photo-clear");
-    if (clear) clear.hidden = !art.photoKids[id];
-  }
-  const dogCard = document.querySelector<HTMLElement>(".dog-card");
-  if (dogCard) {
-    dogCard.classList.toggle("costumed", art.photoDog);
-    const clear = dogCard.querySelector<HTMLButtonElement>(".photo-clear");
-    if (clear) clear.hidden = !art.photoDog;
-  }
-  if (dogFace) dogFace.src = art.dog.src;
-  if (dogCardFace) dogCardFace.src = art.dog.src;
-  if (kidFace) kidFace.src = faceFor(picked);
-  if (winKid) winKid.src = faceFor(picked);
+  if (dogFace && art) dogFace.src = art.dog.src;
+  if (dogCardFace && art) dogCardFace.src = art.dog.src;
+  if (kidFace) kidFace.src = PORTRAITS[picked];
+  if (winKid) winKid.src = PORTRAITS[picked];
 }
 
 function startRun(id: KidId, world = 0, keepScore = false): void {
@@ -121,13 +96,13 @@ function startRun(id: KidId, world = 0, keepScore = false): void {
   sfx.unlock();
   show("play");
   if (trickEl) trickEl.textContent = `Air JUMP = ${KIDS[id].trick}`;
-  if (kidFace) kidFace.src = faceFor(id);
+  paintFaces();
   game.start(id, world, keepScore);
 }
 
 function renderHud(info: HudInfo): void {
   kidName.textContent = info.name;
-  if (kidFace) kidFace.src = faceFor(picked);
+  if (kidFace) kidFace.src = PORTRAITS[picked];
   potatoEl.textContent = `${info.got}/${info.total}`;
   ammoEl.textContent = String(info.ammo);
   if (weaponEl) weaponEl.textContent = info.weapon;
@@ -139,100 +114,38 @@ function renderHud(info: HudInfo): void {
   else hud.classList.remove("starry");
 }
 
-function note(text: string): void {
-  if (!photoNote) return;
-  photoNote.hidden = !text;
-  photoNote.textContent = text;
-}
-
-async function applySlot(slot: PhotoSlot, src: string): Promise<void> {
-  if (!art) return;
-  const img = await loadImage(src);
-  if (slot === "family") art.family = img;
-  else if (slot === "dog") {
-    art.dog = img;
-    art.photoDog = true;
-  } else {
-    art[slot] = img;
-    art.photoKids[slot] = true;
-  }
-  game?.setArt(art);
-  paintFaces();
-}
-
-async function onPhotoFile(slot: PhotoSlot, file: File | undefined): Promise<void> {
-  if (!file || !art) return;
-  try {
-    note("Putting that face on the squad…");
-    const url = await savePhoto(slot, file);
-    await applySlot(slot, url);
-    note(
-      slot === "family"
-        ? "Title photo updated."
-        : slot === "dog"
-          ? "Pipey is running as your dog."
-          : `${KIDS[slot].name} is running as your photo.`,
-    );
-  } catch (err) {
-    note(err instanceof Error ? err.message : "Could not use that picture.");
-  }
-}
-
-async function restoreCartoon(slot: Exclude<PhotoSlot, "family">): Promise<void> {
-  if (!art || !cartoons) return;
-  await clearPhoto(slot);
-  if (slot === "dog") {
-    art.dog = cartoons.dog;
-    art.photoDog = false;
-    note("Pipey is a cartoon again.");
-  } else {
-    art[slot] = cartoons[slot];
-    delete art.photoKids[slot];
-    note(`${KIDS[slot].name} is a cartoon again.`);
-  }
-  game?.setArt(art);
-  paintFaces();
-}
-
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
 
 void (async () => {
   try {
     art = await loadArt();
-    cartoons = {
-      boots: art.boots,
-      ace: art.ace,
-      pip: art.pip,
-      family: art.family,
-      dog: art.dog,
-    };
-    const saved = await loadPhotoUrls();
-    for (const slot of ["boots", "ace", "pip", "family", "dog"] as const) {
-      const url = saved[slot];
-      if (url) await applySlot(slot, url);
-    }
-    game = new SpudGame(canvas, art, {
-      onHud: renderHud,
-      onClear(world, score, got, total, last) {
-        lastClearWasFinal = last;
-        progress = recordClear(progress, worldId, score);
-        paintWorlds();
-        paintFaces();
-        if (last) {
-          winCopy.textContent =
-            got === total
-              ? `Perfect run — ${got} potatoes and ${score} points. The King is toast.`
-              : `The keep is yours with ${got} of ${total} potatoes and ${score} points.`;
-          show("win");
-        } else {
-          clearCopy.textContent = `${world} cleared! ${got}/${total} potatoes · ${score} pts. Next world is unlocked.`;
-          show("clear");
-        }
+    game = new SpudGame(
+      canvas,
+      art,
+      {
+        onHud: renderHud,
+        onClear(world, score, got, total, last) {
+          lastClearWasFinal = last;
+          progress = recordClear(progress, worldId, score);
+          paintWorlds();
+          paintFaces();
+          if (last) {
+            winCopy.textContent =
+              got === total
+                ? `Perfect run — ${got} potatoes and ${score} points. The King is toast.`
+                : `The keep is yours with ${got} of ${total} potatoes and ${score} points.`;
+            show("win");
+          } else {
+            clearCopy.textContent = `${world} cleared! ${got}/${total} potatoes · ${score} pts. Next world is unlocked.`;
+            show("clear");
+          }
+        },
+        onLose() {
+          show("lose");
+        },
       },
-      onLose() {
-        show("lose");
-      },
-    }, input);
+      input,
+    );
     window.addEventListener("resize", () => game?.resize());
     paintWorlds();
     paintFaces();
@@ -251,25 +164,9 @@ playBtn?.addEventListener("click", () => {
 
 document.getElementById("btn-reload")?.addEventListener("click", () => location.reload());
 
-const dogCard = document.querySelector<HTMLElement>(".dog-card");
-dogCard?.querySelector<HTMLInputElement>('input[type="file"]')?.addEventListener("change", (ev) => {
-  const inputEl = ev.target as HTMLInputElement;
-  void onPhotoFile("dog", inputEl.files?.[0]);
-  inputEl.value = "";
-});
-dogCard?.querySelector(".photo-clear")?.addEventListener("click", () => {
-  void restoreCartoon("dog");
-});
-dogCard?.addEventListener("dragover", (ev) => ev.preventDefault());
-dogCard?.addEventListener("drop", (ev) => {
-  ev.preventDefault();
-  void onPhotoFile("dog", (ev as DragEvent).dataTransfer?.files[0]);
-});
-
-for (const card of document.querySelectorAll<HTMLElement>(".kid-card")) {
-  if (card.classList.contains("dog-card")) continue;
-  const id = card.dataset.kid as KidId;
-  card.querySelector(".kid-pick")?.addEventListener("click", () => {
+for (const card of document.querySelectorAll<HTMLElement>(".kid-card[data-kid]")) {
+  card.addEventListener("click", () => {
+    const id = card.dataset.kid as KidId;
     picked = id;
     progress.lastKid = id;
     saveProgress(progress);
@@ -277,32 +174,7 @@ for (const card of document.querySelectorAll<HTMLElement>(".kid-card")) {
     paintFaces();
     show("worlds");
   });
-  const file = card.querySelector<HTMLInputElement>('input[type="file"]');
-  file?.addEventListener("change", () => {
-    void onPhotoFile(id, file.files?.[0]);
-    file.value = "";
-  });
-  card.querySelector(".photo-clear")?.addEventListener("click", () => {
-    void restoreCartoon(id);
-  });
-  card.addEventListener("dragover", (ev) => ev.preventDefault());
-  card.addEventListener("drop", (ev) => {
-    ev.preventDefault();
-    void onPhotoFile(id, (ev as DragEvent).dataTransfer?.files[0]);
-  });
 }
-
-document.getElementById("family-file")?.addEventListener("change", (ev) => {
-  const inputEl = ev.target as HTMLInputElement;
-  void onPhotoFile("family", inputEl.files?.[0]);
-  inputEl.value = "";
-});
-const familySwap = document.querySelector(".family-swap");
-familySwap?.addEventListener("dragover", (ev) => ev.preventDefault());
-familySwap?.addEventListener("drop", (ev) => {
-  ev.preventDefault();
-  void onPhotoFile("family", (ev as DragEvent).dataTransfer?.files[0]);
-});
 
 for (const card of document.querySelectorAll<HTMLButtonElement>(".world-card")) {
   card.addEventListener("click", () => {

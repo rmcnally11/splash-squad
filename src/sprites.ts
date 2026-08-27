@@ -8,8 +8,6 @@ export type Art = {
   potato: HTMLImageElement;
   family: HTMLImageElement;
   dog: HTMLImageElement;
-  photoKids: Partial<Record<"boots" | "ace" | "pip", boolean>>;
-  photoDog: boolean;
 };
 
 const CELL = 96;
@@ -191,8 +189,6 @@ export async function loadArt(): Promise<Art> {
     potato: potatoPng ? knockout(potatoPng) : fromSheet(4, "SPUD", "#d4a017"),
     family,
     dog: dogPng ? knockout(dogPng) : drawnDog(),
-    photoKids: {},
-    photoDog: false,
   };
 }
 
