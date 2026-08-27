@@ -50,7 +50,6 @@ export class SpudGame {
   private onGround = false;
   private coyote = 0;
   private jumpBuf = 0;
-  private jumpAir = 0;
   private hearts = 3;
   private hurt = 0;
   private won = false;
@@ -91,7 +90,6 @@ export class SpudGame {
     this.onGround = true;
     this.coyote = 0;
     this.jumpBuf = 0;
-    this.jumpAir = 0;
     this.hearts = this.kid.hearts;
     this.hurt = 0;
     this.won = false;
@@ -169,17 +167,13 @@ export class SpudGame {
       this.onGround = false;
       this.coyote = 0;
       this.jumpBuf = 0;
-      this.jumpAir = 0;
       sfx.jump();
       this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#f3d27a", 6);
       if (navigator.vibrate) navigator.vibrate(8);
     }
 
-    if (!this.onGround) this.jumpAir += dt;
-    // Phone taps release JUMP on the next frame. Keep full power for a beat
-    // so a tap still clears the first ledges; a longer hold goes higher.
-    if (!input.jump && this.jumpAir > 0.16 && this.vy < -90) this.vy *= 0.78;
-
+    // Phone players tap JUMP. Do not cut velocity on release or a tap
+    // never reaches the second-level platforms.
     this.vy = Math.min(980, this.vy + 1480 * dt);
     this.move(this.vx * dt, this.vy * dt);
 
