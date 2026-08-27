@@ -30,6 +30,24 @@ function slice(sheet: HTMLImageElement, index: number): HTMLImageElement {
   return img;
 }
 
+function crop(
+  src: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): HTMLImageElement {
+  const c = document.createElement("canvas");
+  c.width = CELL;
+  c.height = SHEET_H;
+  const ctx = c.getContext("2d")!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(src, x, y, w, h, 0, 0, CELL, SHEET_H);
+  const img = new Image();
+  img.src = c.toDataURL("image/jpeg", 0.92);
+  return img;
+}
+
 function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement {
   const c = document.createElement("canvas");
   c.width = w;
@@ -61,13 +79,33 @@ async function loadSafe(src: string): Promise<HTMLImageElement | null> {
 
 export async function loadArt(): Promise<Art> {
   const [sheet, family] = await Promise.all([loadSafe("/sheet.jpg"), loadSafe("/family-sm.jpg")]);
+  if (sheet) {
+    return {
+      boots: slice(sheet, 0),
+      ace: slice(sheet, 1),
+      pip: slice(sheet, 2),
+      lep: slice(sheet, 3),
+      potato: slice(sheet, 4),
+      family: family ?? drawn("SQUAD", "#1a4d2e", 280, 180),
+    };
+  }
+  if (family) {
+    return {
+      boots: crop(family, 0, 28, 58, 157),
+      ace: crop(family, 58, 0, 70, 118),
+      pip: crop(family, 48, 95, 72, 105),
+      lep: drawn("LEP", "#2f9e44"),
+      potato: drawn("SPUD", "#d4a017", 96, 96),
+      family,
+    };
+  }
   return {
-    boots: sheet ? slice(sheet, 0) : drawn("BOOTS", "#5aa9e6"),
-    ace: sheet ? slice(sheet, 1) : drawn("ACE", "#7dce82"),
-    pip: sheet ? slice(sheet, 2) : drawn("PIP", "#f7b267"),
-    lep: sheet ? slice(sheet, 3) : drawn("LEP", "#2f9e44"),
-    potato: sheet ? slice(sheet, 4) : drawn("SPUD", "#d4a017", 96, 96),
-    family: family ?? drawn("SQUAD", "#1a4d2e", 280, 180),
+    boots: drawn("BOOTS", "#5aa9e6"),
+    ace: drawn("ACE", "#7dce82"),
+    pip: drawn("PIP", "#f7b267"),
+    lep: drawn("LEP", "#2f9e44"),
+    potato: drawn("SPUD", "#d4a017", 96, 96),
+    family: drawn("SQUAD", "#1a4d2e", 280, 180),
   };
 }
 
