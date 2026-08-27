@@ -354,6 +354,8 @@ h2 {
   padding: 10px 14px calc(12px + var(--safe-b));
   background: linear-gradient(#245c38, #143d24);
   border-top: 3px solid #4d8a22;
+  position: relative;
+  z-index: 5;
 }
 
 .dpad {

@@ -31,12 +31,29 @@ export function bindControls(input: InputState): void {
       }
     };
     el.addEventListener("pointerdown", (ev) => {
-      el.setPointerCapture((ev as PointerEvent).pointerId);
+      try {
+        el.setPointerCapture((ev as PointerEvent).pointerId);
+      } catch {
+        /* capture is optional; some hosts reject it */
+      }
       set(true, ev);
     });
     el.addEventListener("pointerup", (ev) => set(false, ev));
     el.addEventListener("pointercancel", (ev) => set(false, ev));
     el.addEventListener("lostpointercapture", (ev) => set(false, ev));
+    el.addEventListener("mousedown", (ev) => set(true, ev));
+    el.addEventListener("mouseup", (ev) => set(false, ev));
+    el.addEventListener(
+      "touchstart",
+      (ev) => set(true, ev),
+      { passive: false },
+    );
+    el.addEventListener("touchend", (ev) => set(false, ev));
+    el.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      if (key === "jump") input.jumpPressed = true;
+      if (key === "throw") input.throwPressed = true;
+    });
   };
 
   hold(document.getElementById("btn-left"), "left");
@@ -63,17 +80,21 @@ export function bindControls(input: InputState): void {
     K: "throw",
   };
 
-  window.addEventListener("keydown", (ev) => {
+  const down = (ev: KeyboardEvent): void => {
     const k = keyMap[ev.key];
     if (!k) return;
     ev.preventDefault();
     if (k === "jump" && !input.jump) input.jumpPressed = true;
     if (k === "throw" && !input.throw) input.throwPressed = true;
     input[k] = true;
-  });
-  window.addEventListener("keyup", (ev) => {
+  };
+  const up = (ev: KeyboardEvent): void => {
     const k = keyMap[ev.key];
     if (!k) return;
     input[k] = false;
-  });
+  };
+  window.addEventListener("keydown", down, true);
+  window.addEventListener("keyup", up, true);
+  document.addEventListener("keydown", down, true);
+  document.addEventListener("keyup", up, true);
 }
