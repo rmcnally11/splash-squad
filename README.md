@@ -48,3 +48,10 @@ git push -u github cursor/spud-squad-game-48fc:main
 ```
 
 Then in Vercel: import `rmcnally11/spud-squad`, framework Vite, output `dist`.
+
+Until that link exists, one-off uploads cannot carry the full `/art` folder (each kid PNG is 50–80KB). Production uses two small JPEGs instead:
+
+- `/family-sm.jpg` — the family photo on the title screen
+- `/sheet.jpg` — Boots, Ace, Pip, the leprechaun, and the potato
+
+If those files 404, the game draws labeled color boxes. That is a missing-file problem, not missing art in the repo.

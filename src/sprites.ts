@@ -51,27 +51,24 @@ function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement
   return img;
 }
 
-export async function loadArt(): Promise<Art> {
+async function loadSafe(src: string): Promise<HTMLImageElement | null> {
   try {
-    const [sheet, family] = await Promise.all([load("/sheet.jpg"), load("/family-sm.jpg")]);
-    return {
-      boots: slice(sheet, 0),
-      ace: slice(sheet, 1),
-      pip: slice(sheet, 2),
-      lep: slice(sheet, 3),
-      potato: slice(sheet, 4),
-      family,
-    };
+    return await load(src);
   } catch {
-    return {
-      boots: drawn("BOOTS", "#5aa9e6"),
-      ace: drawn("ACE", "#7dce82"),
-      pip: drawn("PIP", "#f7b267"),
-      lep: drawn("LEP", "#2f9e44"),
-      potato: drawn("SPUD", "#d4a017", 96, 96),
-      family: drawn("SQUAD", "#1a4d2e", 280, 180),
-    };
+    return null;
   }
+}
+
+export async function loadArt(): Promise<Art> {
+  const [sheet, family] = await Promise.all([loadSafe("/sheet.jpg"), loadSafe("/family-sm.jpg")]);
+  return {
+    boots: sheet ? slice(sheet, 0) : drawn("BOOTS", "#5aa9e6"),
+    ace: sheet ? slice(sheet, 1) : drawn("ACE", "#7dce82"),
+    pip: sheet ? slice(sheet, 2) : drawn("PIP", "#f7b267"),
+    lep: sheet ? slice(sheet, 3) : drawn("LEP", "#2f9e44"),
+    potato: sheet ? slice(sheet, 4) : drawn("SPUD", "#d4a017", 96, 96),
+    family: family ?? drawn("SQUAD", "#1a4d2e", 280, 180),
+  };
 }
 
 export function kidSprite(art: Art, id: "boots" | "ace" | "pip"): HTMLImageElement {
