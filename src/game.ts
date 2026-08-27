@@ -233,6 +233,7 @@ export class SpudGame {
     if (this.comboT <= 0) this.combo = 0;
     this.coyote = this.onGround ? 0.12 : Math.max(0, this.coyote - dt);
     if (input.jumpPressed) this.jumpBuf = 0.14;
+    if (input.jump && this.onGround) this.jumpBuf = 0.14;
     this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     input.jumpPressed = false;
     sfx.tickMusic(dt);
