@@ -35,3 +35,16 @@ Grab potatoes (gold ones score more), shamrocks for an extra heart, and stars fo
 npm run build
 npm run preview
 ```
+
+## Publish
+
+This is a Vite app. `index.html` must sit at the project root. A Vercel upload that is missing that file dies in `vite build` with `UNRESOLVED_ENTRY`.
+
+`rmcnally11/spud-squad` is still empty, and the Vercel project is **not git-linked**. Until you push this repo there and connect it in Vercel (Project → Git), every production upload is a one-off file deploy.
+
+```bash
+git remote add github https://github.com/rmcnally11/spud-squad.git
+git push -u github cursor/spud-squad-game-48fc:main
+```
+
+Then in Vercel: import `rmcnally11/spud-squad`, framework Vite, output `dist`.
