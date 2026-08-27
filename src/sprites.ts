@@ -1,3 +1,5 @@
+import { FAMILY, SHEET } from "./art-sheet.ts";
+
 export type Art = {
   boots: HTMLImageElement;
   ace: HTMLImageElement;
@@ -19,56 +21,6 @@ function load(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function slice(sheet: HTMLImageElement, index: number): HTMLImageElement {
-  const c = document.createElement("canvas");
-  c.width = CELL;
-  c.height = SHEET_H;
-  const ctx = c.getContext("2d")!;
-  ctx.drawImage(sheet, index * CELL, 0, CELL, SHEET_H, 0, 0, CELL, SHEET_H);
-  const img = new Image();
-  img.src = c.toDataURL("image/jpeg", 0.92);
-  return img;
-}
-
-function crop(
-  src: HTMLImageElement,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-): HTMLImageElement {
-  const c = document.createElement("canvas");
-  c.width = CELL;
-  c.height = SHEET_H;
-  const ctx = c.getContext("2d")!;
-  ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(src, x, y, w, h, 0, 0, CELL, SHEET_H);
-  const img = new Image();
-  img.src = c.toDataURL("image/jpeg", 0.92);
-  return img;
-}
-
-function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement {
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d")!;
-  ctx.fillStyle = "#14110d";
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = color;
-  ctx.fillRect(8, 8, w - 16, h - 16);
-  ctx.strokeStyle = "#fff6e4";
-  ctx.lineWidth = 6;
-  ctx.strokeRect(14, 14, w - 28, h - 28);
-  ctx.fillStyle = "#fff6e4";
-  ctx.font = "800 28px Fredoka, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(label, w / 2, h / 2 + 10);
-  const img = new Image();
-  img.src = c.toDataURL("image/png");
-  return img;
-}
-
 async function loadSafe(src: string): Promise<HTMLImageElement | null> {
   try {
     return await load(src);
@@ -77,35 +29,90 @@ async function loadSafe(src: string): Promise<HTMLImageElement | null> {
   }
 }
 
+function slice(sheet: HTMLImageElement, index: number): HTMLImageElement {
+  const c = document.createElement("canvas");
+  c.width = CELL;
+  c.height = SHEET_H;
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(sheet, index * CELL, 0, CELL, SHEET_H, 0, 0, CELL, SHEET_H);
+  return knockout(c);
+}
+
+function knockout(source: HTMLImageElement | HTMLCanvasElement): HTMLImageElement {
+  const w = "naturalWidth" in source ? source.naturalWidth || source.width : source.width;
+  const h = "naturalHeight" in source ? source.naturalHeight || source.height : source.height;
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, w);
+  c.height = Math.max(1, h);
+  const ctx = c.getContext("2d")!;
+  ctx.drawImage(source, 0, 0, c.width, c.height);
+  const data = ctx.getImageData(0, 0, c.width, c.height);
+  const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i];
+    const g = px[i + 1];
+    const b = px[i + 2];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const dark = max < 38;
+    const sheetGreen = g > 40 && g < 95 && g > r + 18 && g > b + 8 && max < 110;
+    if (dark || sheetGreen) {
+      px[i + 3] = 0;
+    } else if (min < 28 && max - min < 18) {
+      px[i + 3] = 0;
+    }
+  }
+  ctx.putImageData(data, 0, 0);
+  const img = new Image();
+  img.src = c.toDataURL("image/png");
+  return img;
+}
+
+function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(w / 2, h / 2, w * 0.38, h * 0.42, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#14110d";
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  ctx.fillStyle = "#fff6e4";
+  ctx.font = "800 22px Fredoka, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(label, w / 2, h / 2 + 8);
+  const img = new Image();
+  img.src = c.toDataURL("image/png");
+  return img;
+}
+
 export async function loadArt(): Promise<Art> {
-  const [sheet, family] = await Promise.all([loadSafe("/sheet.jpg"), loadSafe("/family-sm.jpg")]);
-  if (sheet) {
-    return {
-      boots: slice(sheet, 0),
-      ace: slice(sheet, 1),
-      pip: slice(sheet, 2),
-      lep: slice(sheet, 3),
-      potato: slice(sheet, 4),
-      family: family ?? drawn("SQUAD", "#1a4d2e", 280, 180),
-    };
-  }
-  if (family) {
-    return {
-      boots: crop(family, 0, 28, 58, 157),
-      ace: crop(family, 58, 0, 70, 118),
-      pip: crop(family, 48, 95, 72, 105),
-      lep: drawn("LEP", "#2f9e44"),
-      potato: drawn("SPUD", "#d4a017", 96, 96),
-      family,
-    };
-  }
+  const [bootsPng, acePng, pipPng, lepPng, potatoPng, familyHi, familyLo, sheetFile] = await Promise.all([
+    loadSafe("/art/girl-boots.png"),
+    loadSafe("/art/boy-ace.png"),
+    loadSafe("/art/toddler-pip.png"),
+    loadSafe("/art/leprechaun.png"),
+    loadSafe("/art/potato.png"),
+    loadSafe("/art/family.jpg"),
+    loadSafe("/family-sm.jpg"),
+    loadSafe("/sheet.jpg"),
+  ]);
+  const baked = sheetFile ?? (await loadSafe(SHEET));
+  const family = familyHi ?? familyLo ?? (await loadSafe(FAMILY)) ?? drawn("SQUAD", "#1a4d2e", 280, 180);
+
+  const fromSheet = (index: number, label: string, color: string) =>
+    baked ? slice(baked, index) : drawn(label, color);
+
   return {
-    boots: drawn("BOOTS", "#5aa9e6"),
-    ace: drawn("ACE", "#7dce82"),
-    pip: drawn("PIP", "#f7b267"),
-    lep: drawn("LEP", "#2f9e44"),
-    potato: drawn("SPUD", "#d4a017", 96, 96),
-    family: drawn("SQUAD", "#1a4d2e", 280, 180),
+    boots: bootsPng ? knockout(bootsPng) : fromSheet(0, "BOOTS", "#5aa9e6"),
+    ace: acePng ? knockout(acePng) : fromSheet(1, "ACE", "#7dce82"),
+    pip: pipPng ? knockout(pipPng) : fromSheet(2, "PIP", "#f7b267"),
+    lep: lepPng ? knockout(lepPng) : fromSheet(3, "LEP", "#2f9e44"),
+    potato: potatoPng ? knockout(potatoPng) : fromSheet(4, "SPUD", "#d4a017"),
+    family,
   };
 }
 
@@ -174,11 +181,11 @@ export function paintOutlined(
   w: number,
   h: number,
 ): void {
-  ctx.drawImage(img, x - 2, y - 2, w + 4, h + 4);
   ctx.drawImage(img, x, y, w, h);
 }
 
-export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p: number): void {
+export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p: number, big = false): void {
+  const scale = big ? 1.7 : 1;
   const rings = [
     ["#fff4c2", 38],
     ["#ff9a1f", 30],
@@ -188,7 +195,7 @@ export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p
   for (const [color, r] of rings) {
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, r * p, 0, Math.PI * 2);
+    ctx.arc(x, y, r * p * scale, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.fillStyle = "#fff6e4";
@@ -196,8 +203,8 @@ export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p
     const a = (i / 7) * Math.PI * 2;
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x + Math.cos(a) * 46 * p, y + Math.sin(a) * 46 * p);
-    ctx.lineTo(x + Math.cos(a + 0.18) * 18 * p, y + Math.sin(a + 0.18) * 18 * p);
+    ctx.lineTo(x + Math.cos(a) * 46 * p * scale, y + Math.sin(a) * 46 * p * scale);
+    ctx.lineTo(x + Math.cos(a + 0.18) * 18 * p * scale, y + Math.sin(a + 0.18) * 18 * p * scale);
     ctx.fill();
   }
 }

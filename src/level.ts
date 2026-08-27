@@ -15,7 +15,7 @@ export type Potato = { x: number; y: number; taken: boolean; gold: boolean };
 export type Pickup = {
   x: number;
   y: number;
-  kind: "star" | "shamrock" | "gold";
+  kind: "star" | "shamrock" | "gold" | "blaster";
   taken: boolean;
 };
 export type Spring = { x: number; y: number; w: number; h: number; boost: number };
@@ -197,6 +197,7 @@ function meadow(): WorldDef {
     movers: [mover(2580, 470, 150, 2480, 2780, 70, "x")],
     pickups: [
       { x: 1300, y: 330, kind: "shamrock", taken: false },
+      { x: 1680, y: 458, kind: "blaster", taken: false },
       { x: 2500, y: 278, kind: "star", taken: false },
       { x: 3780, y: 228, kind: "gold", taken: false },
     ],
@@ -277,6 +278,7 @@ function mine(): WorldDef {
     ],
     pickups: [
       { x: 1400, y: 312, kind: "shamrock", taken: false },
+      { x: 1880, y: 458, kind: "blaster", taken: false },
       { x: 2660, y: 252, kind: "star", taken: false },
       { x: 4300, y: 292, kind: "gold", taken: false },
     ],
@@ -352,6 +354,7 @@ function keep(): WorldDef {
     ],
     pickups: [
       { x: 1160, y: 312, kind: "shamrock", taken: false },
+      { x: 1920, y: 298, kind: "blaster", taken: false },
       { x: 2580, y: 252, kind: "star", taken: false },
       { x: 3680, y: 192, kind: "gold", taken: false },
     ],

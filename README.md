@@ -1,8 +1,8 @@
 # Spud Squad
 
-A phone-first arcade platformer starring three kids. Jump, stomp, **throw potatoes**, and blast leprechauns across **three worlds**, then knock the King down at Rainbow Keep.
+Phone-first arcade platformer. Cartoon kids, potato guns, three worlds, King at Rainbow Keep.
 
-## Play
+## Play locally (full cartoon art)
 
 ```bash
 npm install
@@ -11,47 +11,46 @@ npm run dev
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-On a phone: hold **◀ / ▶**, tap **JUMP**, and tap **SPUD** to throw. Air-tap JUMP for that kid’s trick. Keyboard: arrows or WASD, space to jump, **J** / **F** to throw.
+Thumbs: **◀ / ▶**, **JUMP**, **SPUD**. Air JUMP is that kid’s trick. Keyboard: arrows or WASD, space to jump, **J** / **F** to throw.
+
+## Weapons
+
+Start with a single **SPUD**. Grab the red **blaster crate** to upgrade:
+
+1. **SPUD** — one potato
+2. **RAPID** — faster shots
+3. **SPREAD** — three-way blast
+4. **HOT SPUD** — bigger bomb, extra King damage
+
+Collect potatoes for ammo. Gold spuds give more.
 
 ## The kids
 
-| Kid | Trick | How they play |
-| --- | --- | --- |
-| **Boots** | Air jump | Second leap in the air. Highest bounce off a hat. |
-| **Ace** | Ground pound | Air JUMP while falling slams the ground and flattens nearby hats. Extra heart. |
-| **Pip** | Dash | Air JUMP rockets sideways. Fastest. Fits under low beams. |
+| Kid | Trick |
+| --- | --- |
+| **Boots** | Air jump — second leap. Highest hat bounce. |
+| **Ace** | Ground pound. Extra heart. |
+| **Pip** | Dash. Fastest. Fits under beams. |
 
 ## Worlds
 
-1. **Potato Patch** — sunny fields, springs, a moving ledge, flying hats.
-2. **Lucky Mine** — glow crystals, low ceilings, more flyers.
-3. **Rainbow Keep** — castle climb. Stomp the King three times to unlock the door.
+1. **Potato Patch**
+2. **Lucky Mine**
+3. **Rainbow Keep** — stomp the King three times
 
-Grab potatoes (gold ones score more), shamrocks for an extra heart, and stars for a short invincible rush. Flags save your spot. All hearts gone is a catch — retry the same world or switch kids.
+## Publish the full game
 
-## Build
+Do **not** use tiny one-off file uploads. Those drop `/art` and you get boxes instead of cartoons.
+
+From this folder, after `npm run build`:
 
 ```bash
-npm run build
-npm run preview
+npx vercel deploy dist --yes
 ```
 
-## Publish
-
-This is a Vite app. `index.html` must sit at the project root. A Vercel upload that is missing that file dies in `vite build` with `UNRESOLVED_ENTRY`.
-
-`rmcnally11/spud-squad` is still empty, and the Vercel project is **not git-linked**. Until you push this repo there and connect it in Vercel (Project → Git), every production upload is a one-off file deploy.
+Or push the repo to GitHub and link that repo in Vercel (framework **Vite**, output `dist`). Then every push ships the cartoon PNGs, the family photo, and the game together.
 
 ```bash
 git remote add github https://github.com/rmcnally11/spud-squad.git
 git push -u github cursor/spud-squad-game-48fc:main
 ```
-
-Then in Vercel: import `rmcnally11/spud-squad`, framework Vite, output `dist`.
-
-Until that link exists, one-off uploads cannot carry the full `/art` folder (each kid PNG is 50–80KB). Production uses two small JPEGs instead:
-
-- `/family-sm.jpg` — the family photo on the title screen
-- `/sheet.jpg` — Boots, Ace, Pip, the leprechaun, and the potato
-
-If those files 404, the game draws labeled color boxes. That is a missing-file problem, not missing art in the repo.

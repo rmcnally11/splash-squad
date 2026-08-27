@@ -29,8 +29,24 @@ type Particle = {
 };
 
 type Floater = { x: number; y: number; text: string; life: number; color: string };
-type SpudBall = { x: number; y: number; vx: number; vy: number; life: number; spin: number };
-type Boom = { x: number; y: number; life: number; max: number };
+type SpudBall = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  spin: number;
+  hot: boolean;
+};
+type Boom = { x: number; y: number; life: number; max: number; big: boolean };
+type WeaponId = 0 | 1 | 2 | 3;
+
+const WEAPONS = [
+  { name: "SPUD", cool: 0.26, shots: 1, hot: false },
+  { name: "RAPID", cool: 0.11, shots: 1, hot: false },
+  { name: "SPREAD", cool: 0.22, shots: 3, hot: false },
+  { name: "HOT SPUD", cool: 0.3, shots: 1, hot: true },
+] as const;
 
 export type HudInfo = {
   hearts: number;
@@ -44,6 +60,7 @@ export type HudInfo = {
   star: number;
   trick: string;
   ammo: number;
+  weapon: string;
 };
 
 export type GameHooks = {
@@ -68,6 +85,7 @@ export class SpudGame {
   private spuds: SpudBall[] = [];
   private booms: Boom[] = [];
   private ammo = 3;
+  private weapon: WeaponId = 0;
   private throwCool = 0;
   private throwPose = 0;
   private x = 80;
@@ -128,7 +146,10 @@ export class SpudGame {
     this.shots = [];
     this.spuds = [];
     this.booms = [];
-    if (!keepScore) this.ammo = 3;
+    if (!keepScore) {
+      this.ammo = 3;
+      this.weapon = 0;
+    }
     this.throwCool = 0;
     this.throwPose = 0;
     this.x = 90;
@@ -207,6 +228,7 @@ export class SpudGame {
       star: this.star,
       trick: this.kid.trick,
       ammo: this.ammo,
+      weapon: WEAPONS[this.weapon].name,
     });
   }
 
@@ -334,20 +356,28 @@ export class SpudGame {
 
   private tryThrow(): void {
     if (this.ammo <= 0 || this.throwCool > 0 || this.won || this.dead) return;
+    const gun = WEAPONS[this.weapon];
     this.ammo -= 1;
-    this.throwCool = 0.26;
+    this.throwCool = gun.cool;
     this.throwPose = 0.16;
-    this.spuds.push({
-      x: this.x + this.kid.w * 0.5 + this.facing * 18,
-      y: this.y + this.kid.h * 0.38,
-      vx: this.facing * 520 + this.vx * 0.25,
-      vy: -240,
-      life: 1.7,
-      spin: 0,
-    });
+    const originX = this.x + this.kid.w * 0.5 + this.facing * 18;
+    const originY = this.y + this.kid.h * 0.38;
+    const angles = gun.shots === 3 ? [-0.28, 0, 0.28] : [0];
+    for (const tilt of angles) {
+      const speed = gun.hot ? 580 : 520;
+      this.spuds.push({
+        x: originX,
+        y: originY,
+        vx: Math.cos(tilt) * this.facing * speed + this.vx * 0.25,
+        vy: -240 + Math.sin(tilt) * 220,
+        life: gun.hot ? 2.1 : 1.7,
+        spin: 0,
+        hot: gun.hot,
+      });
+    }
     sfx.throw();
-    this.shake = 0.1;
-    this.burst(this.x + this.facing * 24, this.y + 20, "#f3d27a", 6);
+    this.shake = gun.hot ? 0.16 : 0.1;
+    this.burst(this.x + this.facing * 24, this.y + 20, gun.hot ? "#ff6b2a" : "#f3d27a", gun.hot ? 10 : 6);
     this.hud();
     if (navigator.vibrate) navigator.vibrate(10);
   }
@@ -360,12 +390,12 @@ export class SpudGame {
       s.y += s.vy * dt;
       s.vy += 980 * dt;
       if (s.y > GROUND - 8 || s.life <= 0) {
-        this.explode(s.x, s.y);
+        this.explode(s.x, s.y, s.hot);
         return false;
       }
       for (const p of this.solids()) {
         if (overlap(s.x - 8, s.y - 8, 16, 16, p.x, p.y, p.w, p.h)) {
-          this.explode(s.x, s.y);
+          this.explode(s.x, s.y, s.hot);
           return false;
         }
       }
@@ -374,16 +404,16 @@ export class SpudGame {
         if (!overlap(s.x - 10, s.y - 10, 20, 20, e.x, e.y, e.w, e.h)) continue;
         e.flat = this.kid.stompTime + 0.4;
         this.addScore(250, e.x, e.y, "SPUD");
-        this.explode(e.x + e.w / 2, e.y + e.h / 2);
+        this.explode(e.x + e.w / 2, e.y + e.h / 2, s.hot);
         return false;
       }
       const b = this.world.boss;
       if (b?.alive && b.hurt <= 0 && overlap(s.x - 10, s.y - 10, 20, 20, b.x, b.y, b.w, b.h)) {
-        b.hp -= 1;
+        b.hp -= s.hot ? 2 : 1;
         b.hurt = 0.7;
         sfx.bossHit();
         this.addScore(350, b.x, b.y, "KING HIT");
-        this.explode(s.x, s.y);
+        this.explode(s.x, s.y, s.hot);
         if (b.hp <= 0) {
           b.alive = false;
           this.world.lockedDoor = false;
@@ -400,12 +430,22 @@ export class SpudGame {
     });
   }
 
-  private explode(x: number, y: number): void {
-    this.booms.push({ x, y, life: 0.28, max: 0.28 });
-    this.shake = Math.max(this.shake, 0.18);
+  private explode(x: number, y: number, hot = false): void {
+    this.booms.push({ x, y, life: hot ? 0.38 : 0.28, max: hot ? 0.38 : 0.28, big: hot });
+    this.shake = Math.max(this.shake, hot ? 0.28 : 0.18);
     sfx.boom();
-    this.burst(x, y, "#ff9a1f", 16);
-    this.burst(x, y, "#fff4c2", 8);
+    this.burst(x, y, hot ? "#ff4d1f" : "#ff9a1f", hot ? 22 : 16);
+    this.burst(x, y, "#fff4c2", hot ? 12 : 8);
+    if (!hot) return;
+    const radius = 110;
+    for (const e of this.leps) {
+      if (e.flat > 0) continue;
+      const dx = e.x + e.w / 2 - x;
+      const dy = e.y + e.h / 2 - y;
+      if (dx * dx + dy * dy > radius * radius) continue;
+      e.flat = this.kid.stompTime + 0.5;
+      this.addScore(180, e.x, e.y, "BLAST");
+    }
   }
 
   private stepMovers(dt: number): void {
@@ -522,6 +562,11 @@ export class SpudGame {
         this.hearts = Math.min(this.maxHearts, this.hearts + 1);
         sfx.collect();
         this.float(p.x, p.y, "+♥", "#8fd14f");
+      } else if (p.kind === "blaster") {
+        this.weapon = Math.min(3, this.weapon + 1) as WeaponId;
+        this.ammo += 3;
+        sfx.gold();
+        this.float(p.x, p.y, WEAPONS[this.weapon].name, "#ff9a1f");
       } else {
         this.addScore(500, p.x, p.y, "GOLD");
         sfx.gold();
@@ -791,12 +836,12 @@ export class SpudGame {
       ctx.stroke();
     }
     for (const s of this.spuds) {
-      paintSpud(ctx, this.art.potato, s.x - 14, s.y - 14, this.time, false, s.spin, 26);
+      paintSpud(ctx, this.art.potato, s.x - 14, s.y - 14, this.time, s.hot, s.spin, s.hot ? 34 : 26);
     }
     if (this.world.boss?.alive) this.paintBoss(ctx, this.world.boss);
     this.paintKid(ctx);
     for (const b of this.booms) {
-      paintBoom(ctx, b.x, b.y, 1 - b.life / b.max);
+      paintBoom(ctx, b.x, b.y, 1 - b.life / b.max, b.big);
     }
     for (const p of this.particles) {
       ctx.globalAlpha = p.life / p.max;
@@ -1009,6 +1054,18 @@ export class SpudGame {
         ctx.arc(p.x + 14 + ox, p.y + 14 + oy + bob, 7, 0, Math.PI * 2);
         ctx.fill();
       }
+    } else if (p.kind === "blaster") {
+      ctx.fillStyle = "#c41e3a";
+      ctx.strokeStyle = "#14110d";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.rect(p.x + 2, p.y + 10 + bob, 26, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#f3d27a";
+      ctx.beginPath();
+      ctx.arc(p.x + 28, p.y + 16 + bob, 7, 0, Math.PI * 2);
+      ctx.fill();
     } else {
       ctx.fillStyle = "#ffd15c";
       ctx.beginPath();
@@ -1044,13 +1101,6 @@ export class SpudGame {
     ctx.save();
     ctx.translate(e.x + e.w / 2, y + h);
     ctx.scale(dir, 1);
-    ctx.fillStyle = "#1d8a2e";
-    ctx.strokeStyle = "#14110d";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.ellipse(0, -h * 0.55, e.w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
     paintOutlined(ctx, this.art.lep, -e.w / 2 - 2, -h - 4 + wobble, e.w + 4, h + 6);
     ctx.restore();
   }
@@ -1083,11 +1133,11 @@ export class SpudGame {
     ctx.rotate(this.throwPose > 0 ? this.facing * -0.18 : 0);
     ctx.scale(this.facing * stretch, squash);
     if (this.star > 0) ctx.filter = "saturate(1.8) hue-rotate(20deg)";
-    ctx.fillStyle = "#14110d";
+    ctx.fillStyle = "rgba(20, 16, 10, 0.28)";
     ctx.beginPath();
-    ctx.ellipse(0, -6, this.kid.w * 0.55, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -4, this.kid.w * 0.42, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    paintOutlined(ctx, img, -this.kid.w / 2 - 6, -this.kid.h - 8 + run * 2, this.kid.w + 12, this.kid.h + 10);
+    paintOutlined(ctx, img, -this.kid.w / 2 - 4, -this.kid.h - 4 + run * 2, this.kid.w + 8, this.kid.h + 6);
     ctx.restore();
   }
 }
