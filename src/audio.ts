@@ -59,6 +59,14 @@ export const sfx = {
     beep(200, 0.06, "sawtooth", 0.05);
     beep(640, 0.12, "square", 0.05);
   },
+  throw(): void {
+    beep(180, 0.05, "square", 0.05);
+    beep(340, 0.08, "sawtooth", 0.04);
+  },
+  boom(): void {
+    beep(90, 0.16, "sawtooth", 0.08);
+    beep(60, 0.2, "square", 0.05);
+  },
   stomp(): void {
     beep(180, 0.12, "sawtooth", 0.06);
   },

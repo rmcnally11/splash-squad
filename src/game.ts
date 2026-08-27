@@ -15,7 +15,7 @@ import {
   type Shot,
   type WorldDef,
 } from "./level.ts";
-import { kidSprite, type Art } from "./sprites.ts";
+import { kidSprite, paintBoom, paintOutlined, paintSpud, type Art } from "./sprites.ts";
 
 type Particle = {
   x: number;
@@ -29,6 +29,8 @@ type Particle = {
 };
 
 type Floater = { x: number; y: number; text: string; life: number; color: string };
+type SpudBall = { x: number; y: number; vx: number; vy: number; life: number; spin: number };
+type Boom = { x: number; y: number; life: number; max: number };
 
 export type HudInfo = {
   hearts: number;
@@ -41,6 +43,7 @@ export type HudInfo = {
   world: string;
   star: number;
   trick: string;
+  ammo: number;
 };
 
 export type GameHooks = {
@@ -62,6 +65,11 @@ export class SpudGame {
   private potatoes: Potato[] = [];
   private leps: Lep[] = [];
   private shots: Shot[] = [];
+  private spuds: SpudBall[] = [];
+  private booms: Boom[] = [];
+  private ammo = 3;
+  private throwCool = 0;
+  private throwPose = 0;
   private x = 80;
   private y = GROUND - 68;
   private vx = 0;
@@ -118,6 +126,11 @@ export class SpudGame {
     this.potatoes = this.world.potatoes;
     this.leps = this.world.leps;
     this.shots = [];
+    this.spuds = [];
+    this.booms = [];
+    if (!keepScore) this.ammo = 3;
+    this.throwCool = 0;
+    this.throwPose = 0;
     this.x = 90;
     this.y = GROUND - this.kid.h;
     this.vx = 0;
@@ -193,6 +206,7 @@ export class SpudGame {
       world: this.world.name,
       star: this.star,
       trick: this.kid.trick,
+      ammo: this.ammo,
     });
   }
 
@@ -214,6 +228,8 @@ export class SpudGame {
     this.shake = Math.max(0, this.shake - dt);
     this.landSquash = Math.max(0, this.landSquash - dt);
     this.dashT = Math.max(0, this.dashT - dt);
+    this.throwCool = Math.max(0, this.throwCool - dt);
+    this.throwPose = Math.max(0, this.throwPose - dt);
     if (this.comboT <= 0) this.combo = 0;
     this.coyote = this.onGround ? 0.12 : Math.max(0, this.coyote - dt);
     if (input.jumpPressed) this.jumpBuf = 0.14;
@@ -253,6 +269,11 @@ export class SpudGame {
       this.doTrick();
     }
 
+    if (input.throwPressed) {
+      this.tryThrow();
+      input.throwPressed = false;
+    }
+
     this.vy = Math.min(this.pound ? 1400 : 980, this.vy + (this.pound ? 2600 : 1480) * dt);
     const beforeY = this.y;
     this.stepMovers(dt);
@@ -274,6 +295,7 @@ export class SpudGame {
     this.touchLeps(dt);
     this.touchBoss(dt);
     this.touchShots(dt);
+    this.stepSpuds(dt);
     this.touchDoor();
     this.stepParticles(dt);
     this.stepFloats(dt);
@@ -307,6 +329,82 @@ export class SpudGame {
       this.burst(this.x + this.kid.w / 2, this.y + this.kid.h / 2, "#ff8ad4", 14);
       this.float(this.x, this.y, "DASH!", "#ff8ad4");
     }
+  }
+
+  private tryThrow(): void {
+    if (this.ammo <= 0 || this.throwCool > 0 || this.won || this.dead) return;
+    this.ammo -= 1;
+    this.throwCool = 0.26;
+    this.throwPose = 0.16;
+    this.spuds.push({
+      x: this.x + this.kid.w * 0.5 + this.facing * 18,
+      y: this.y + this.kid.h * 0.38,
+      vx: this.facing * 520 + this.vx * 0.25,
+      vy: -240,
+      life: 1.7,
+      spin: 0,
+    });
+    sfx.throw();
+    this.shake = 0.1;
+    this.burst(this.x + this.facing * 24, this.y + 20, "#f3d27a", 6);
+    this.hud();
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+
+  private stepSpuds(dt: number): void {
+    this.spuds = this.spuds.filter((s) => {
+      s.life -= dt;
+      s.spin += dt * 14;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += 980 * dt;
+      if (s.y > GROUND - 8 || s.life <= 0) {
+        this.explode(s.x, s.y);
+        return false;
+      }
+      for (const p of this.solids()) {
+        if (overlap(s.x - 8, s.y - 8, 16, 16, p.x, p.y, p.w, p.h)) {
+          this.explode(s.x, s.y);
+          return false;
+        }
+      }
+      for (const e of this.leps) {
+        if (e.flat > 0) continue;
+        if (!overlap(s.x - 10, s.y - 10, 20, 20, e.x, e.y, e.w, e.h)) continue;
+        e.flat = this.kid.stompTime + 0.4;
+        this.addScore(250, e.x, e.y, "SPUD");
+        this.explode(e.x + e.w / 2, e.y + e.h / 2);
+        return false;
+      }
+      const b = this.world.boss;
+      if (b?.alive && b.hurt <= 0 && overlap(s.x - 10, s.y - 10, 20, 20, b.x, b.y, b.w, b.h)) {
+        b.hp -= 1;
+        b.hurt = 0.7;
+        sfx.bossHit();
+        this.addScore(350, b.x, b.y, "KING HIT");
+        this.explode(s.x, s.y);
+        if (b.hp <= 0) {
+          b.alive = false;
+          this.world.lockedDoor = false;
+          this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+          this.addScore(2000, b.x, b.y, "BOSS");
+        }
+        return false;
+      }
+      return true;
+    });
+    this.booms = this.booms.filter((b) => {
+      b.life -= dt;
+      return b.life > 0;
+    });
+  }
+
+  private explode(x: number, y: number): void {
+    this.booms.push({ x, y, life: 0.28, max: 0.28 });
+    this.shake = Math.max(this.shake, 0.18);
+    sfx.boom();
+    this.burst(x, y, "#ff9a1f", 16);
+    this.burst(x, y, "#fff4c2", 8);
   }
 
   private stepMovers(dt: number): void {
@@ -437,6 +535,7 @@ export class SpudGame {
       if (p.taken) continue;
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, p.x, p.y, 28, 28)) continue;
       p.taken = true;
+      this.ammo += p.gold ? 2 : 1;
       const pts = (p.gold ? 300 : 100) * (1 + this.combo);
       this.addScore(pts, p.x, p.y, p.gold ? "GOLD SPUD" : "+");
       if (p.gold) sfx.gold();
@@ -678,22 +777,26 @@ export class SpudGame {
     }
     for (const p of this.potatoes) {
       if (p.taken) continue;
-      const bob = Math.sin(this.time * 5 + p.x * 0.02) * 5;
-      const size = p.gold ? 32 : 28;
-      ctx.save();
-      if (p.gold) ctx.filter = "sepia(1) saturate(3) hue-rotate(10deg)";
-      ctx.drawImage(this.art.potato, p.x, p.y + bob, size, size);
-      ctx.restore();
+      paintSpud(ctx, this.art.potato, p.x, p.y, this.time + p.x * 0.01, p.gold);
     }
     for (const e of this.leps) this.paintLep(ctx, e);
     for (const s of this.shots) {
       ctx.fillStyle = "#ffe566";
+      ctx.strokeStyle = "#2a1a0a";
+      ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
       ctx.fill();
+      ctx.stroke();
+    }
+    for (const s of this.spuds) {
+      paintSpud(ctx, this.art.potato, s.x - 14, s.y - 14, this.time, false, s.spin, 26);
     }
     if (this.world.boss?.alive) this.paintBoss(ctx, this.world.boss);
     this.paintKid(ctx);
+    for (const b of this.booms) {
+      paintBoom(ctx, b.x, b.y, 1 - b.life / b.max);
+    }
     for (const p of this.particles) {
       ctx.globalAlpha = p.life / p.max;
       ctx.fillStyle = p.color;
@@ -712,30 +815,59 @@ export class SpudGame {
     ctx.restore();
     if (this.combo >= 3) {
       ctx.fillStyle = "#ffe566";
+      ctx.strokeStyle = "#14110d";
+      ctx.lineWidth = 5;
       ctx.font = "800 28px Fredoka, sans-serif";
+      ctx.strokeText(`COMBO x${this.combo}`, 16, this.viewH - 18);
       ctx.fillText(`COMBO x${this.combo}`, 16, this.viewH - 18);
     }
+    this.paintScan(ctx);
     ctx.restore();
+  }
+
+  private paintScan(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = "rgba(10, 6, 2, 0.16)";
+    for (let y = 0; y < this.viewH; y += 3) ctx.fillRect(0, y, this.viewW, 1);
+    const g = ctx.createRadialGradient(
+      this.viewW / 2,
+      this.viewH / 2,
+      this.viewH * 0.2,
+      this.viewW / 2,
+      this.viewH / 2,
+      this.viewH * 0.85,
+    );
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(8,4,0,0.35)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, this.viewW, this.viewH);
   }
 
   private paintSky(ctx: CanvasRenderingContext2D): void {
     const g = ctx.createLinearGradient(0, 0, 0, this.viewH);
     if (this.world.theme === "mine") {
-      g.addColorStop(0, "#1b1630");
-      g.addColorStop(0.55, "#3a2458");
-      g.addColorStop(1, "#1f3d2a");
+      g.addColorStop(0, "#1a1028");
+      g.addColorStop(0.45, "#4a2048");
+      g.addColorStop(1, "#1c2a18");
     } else if (this.world.theme === "keep") {
-      g.addColorStop(0, "#5b2d8a");
-      g.addColorStop(0.4, "#e070b0");
-      g.addColorStop(0.7, "#f7c16a");
-      g.addColorStop(1, "#6aa84f");
+      g.addColorStop(0, "#3a1860");
+      g.addColorStop(0.35, "#d23a5a");
+      g.addColorStop(0.65, "#f0a030");
+      g.addColorStop(1, "#4a6a22");
     } else {
-      g.addColorStop(0, "#8fd4ea");
-      g.addColorStop(0.55, "#bfe6c8");
-      g.addColorStop(1, "#6aa84f");
+      g.addColorStop(0, "#5ec4f0");
+      g.addColorStop(0.4, "#f3d27a");
+      g.addColorStop(0.7, "#7ec86a");
+      g.addColorStop(1, "#3d7a28");
     }
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, this.viewW, this.viewH);
+    ctx.fillStyle = this.world.theme === "mine" ? "#f4e6a0" : "#fff1a8";
+    ctx.beginPath();
+    ctx.arc(this.viewW * 0.78, 70, 34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2a1a0a";
+    ctx.lineWidth = 4;
+    ctx.stroke();
   }
 
   private paintParallax(ctx: CanvasRenderingContext2D): void {
@@ -795,31 +927,48 @@ export class SpudGame {
   }
 
   private paintPlatform(ctx: CanvasRenderingContext2D, p: Platform): void {
+    ctx.save();
+    ctx.strokeStyle = "#14110d";
+    ctx.lineWidth = 5;
+    ctx.lineJoin = "round";
     if (p.kind === "grass") {
-      ctx.fillStyle = "#5a3a1c";
+      ctx.fillStyle = "#6b3f1c";
       ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = "#4fa64a";
-      ctx.fillRect(p.x, p.y - 10, p.w, 16);
-      ctx.fillStyle = "#6bc45c";
-      ctx.fillRect(p.x, p.y - 14, p.w, 8);
+      ctx.strokeRect(p.x + 2, p.y + 2, p.w - 4, p.h - 4);
+      ctx.fillStyle = "#3d9a32";
+      ctx.fillRect(p.x, p.y - 14, p.w, 18);
+      ctx.strokeRect(p.x + 1, p.y - 14, p.w - 2, 18);
+      ctx.fillStyle = "#7de05a";
+      ctx.fillRect(p.x + 4, p.y - 12, p.w - 8, 6);
+      ctx.restore();
       return;
     }
     if (p.kind === "ceiling") {
-      ctx.fillStyle = "#4a3424";
+      ctx.fillStyle = "#3a2416";
       ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = "#6a4a30";
-      for (let i = 0; i < p.w; i += 24) ctx.fillRect(p.x + i, p.y, 12, p.h);
+      ctx.fillStyle = "#6a4024";
+      for (let i = 0; i < p.w; i += 22) ctx.fillRect(p.x + i, p.y, 10, p.h);
+      ctx.strokeRect(p.x, p.y, p.w, p.h);
+      ctx.restore();
       return;
     }
     const fill =
-      p.kind === "stone" ? "#8d8678" : p.kind === "brick" ? "#c45b4a" : p.kind === "crystal" ? "#7b6cff" : "#c48a3a";
+      p.kind === "stone" ? "#8a8374" : p.kind === "brick" ? "#c44b38" : p.kind === "crystal" ? "#6a58e0" : "#d4922a";
     const hi =
-      p.kind === "stone" ? "#a39c8e" : p.kind === "brick" ? "#e08a74" : p.kind === "crystal" ? "#c3b7ff" : "#e0b25a";
+      p.kind === "stone" ? "#c4bba8" : p.kind === "brick" ? "#f08a6a" : p.kind === "crystal" ? "#c8b8ff" : "#ffd36a";
     ctx.fillStyle = fill;
-    roundRect(ctx, p.x, p.y, p.w, p.h, 6);
+    roundRect(ctx, p.x, p.y, p.w, p.h + 4, 5);
     ctx.fill();
+    ctx.stroke();
     ctx.fillStyle = hi;
-    ctx.fillRect(p.x + 4, p.y + 3, p.w - 8, 5);
+    ctx.fillRect(p.x + 6, p.y + 3, p.w - 12, 5);
+    ctx.fillStyle = "#14110d";
+    for (let i = 10; i < p.w - 8; i += 18) {
+      ctx.beginPath();
+      ctx.arc(p.x + i, p.y + p.h * 0.55, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   private paintSpring(ctx: CanvasRenderingContext2D, s: { x: number; y: number; w: number; h: number }): void {
@@ -890,10 +1039,18 @@ export class SpudGame {
     const h = flat ? e.h * 0.38 : e.h;
     const y = flat ? e.y + e.h - h : e.y;
     const dir = e.vx >= 0 ? 1 : -1;
+    const wobble = flat ? 0 : Math.sin(this.time * 10 + e.x) * 2;
     ctx.save();
     ctx.translate(e.x + e.w / 2, y + h);
     ctx.scale(dir, 1);
-    ctx.drawImage(this.art.lep, -e.w / 2, -h, e.w, h);
+    ctx.fillStyle = "#1d8a2e";
+    ctx.strokeStyle = "#14110d";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.55, e.w * 0.42, h * 0.42, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    paintOutlined(ctx, this.art.lep, -e.w / 2 - 2, -h - 4 + wobble, e.w + 4, h + 6);
     ctx.restore();
   }
 
@@ -902,11 +1059,15 @@ export class SpudGame {
     ctx.save();
     ctx.translate(b.x + b.w / 2, b.y + b.h);
     ctx.scale(b.vx >= 0 ? 1.35 : -1.35, 1.35);
-    ctx.drawImage(this.art.lep, -b.w / 2 / 1.35, -b.h / 1.35, b.w / 1.35, b.h / 1.35);
-    ctx.restore();
-    ctx.fillStyle = "#1b2418";
-    ctx.fillRect(b.x, b.y - 16, b.w, 8);
     ctx.fillStyle = "#c41e3a";
+    ctx.beginPath();
+    ctx.ellipse(0, -b.h * 0.4, b.w * 0.38, b.h * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    paintOutlined(ctx, this.art.lep, -b.w / 2 / 1.35, -b.h / 1.35, b.w / 1.35, b.h / 1.35);
+    ctx.restore();
+    ctx.fillStyle = "#14110d";
+    ctx.fillRect(b.x - 2, b.y - 18, b.w + 4, 12);
+    ctx.fillStyle = "#e23d12";
     ctx.fillRect(b.x, b.y - 16, (b.w * b.hp) / b.max, 8);
   }
 
@@ -914,13 +1075,18 @@ export class SpudGame {
     if (this.hurt > 0 && this.star <= 0 && Math.floor(this.time * 16) % 2 === 0) return;
     const img = kidSprite(this.art, this.kid.id);
     const run = this.onGround && Math.abs(this.vx) > 20 ? Math.sin(this.time * 18) : 0;
-    const squash = this.landSquash > 0 ? 0.82 : this.vy < -80 ? 1.08 : 1;
-    const stretch = this.landSquash > 0 ? 1.12 : this.vy < -80 ? 0.92 : 1;
+    const squash = this.landSquash > 0 ? 0.8 : this.vy < -80 ? 1.1 : 1;
+    const stretch = this.landSquash > 0 ? 1.14 : this.vy < -80 ? 0.9 : 1;
     ctx.save();
     ctx.translate(this.x + this.kid.w / 2, this.y + this.kid.h);
+    ctx.rotate(this.throwPose > 0 ? this.facing * -0.18 : 0);
     ctx.scale(this.facing * stretch, squash);
-    if (this.star > 0) ctx.filter = "saturate(1.6) hue-rotate(25deg)";
-    ctx.drawImage(img, -this.kid.w / 2 - 4, -this.kid.h - 6 + run * 2, this.kid.w + 8, this.kid.h + 8);
+    if (this.star > 0) ctx.filter = "saturate(1.8) hue-rotate(20deg)";
+    ctx.fillStyle = "#14110d";
+    ctx.beginPath();
+    ctx.ellipse(0, -6, this.kid.w * 0.55, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    paintOutlined(ctx, img, -this.kid.w / 2 - 6, -this.kid.h - 8 + run * 2, this.kid.w + 12, this.kid.h + 10);
     ctx.restore();
   }
 }

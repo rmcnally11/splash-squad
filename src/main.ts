@@ -13,6 +13,7 @@ const hud = document.getElementById("hud")!;
 const controls = document.getElementById("controls")!;
 const heartsEl = document.getElementById("hearts")!;
 const potatoEl = document.getElementById("potato-count")!;
+const ammoEl = document.getElementById("ammo-count")!;
 const kidName = document.getElementById("kid-name")!;
 const scoreEl = document.getElementById("score")!;
 const worldEl = document.getElementById("world-chip")!;
@@ -60,6 +61,7 @@ function startRun(id: KidId, world = 0, keepScore = false): void {
 function renderHud(info: HudInfo): void {
   kidName.textContent = info.name;
   potatoEl.textContent = `${info.got}/${info.total}`;
+  ammoEl.textContent = String(info.ammo);
   heartsEl.textContent = `${"♥".repeat(info.hearts)}${"♡".repeat(Math.max(0, info.max - info.hearts))}`;
   scoreEl.textContent = String(info.score).padStart(6, "0");
   worldEl.textContent = info.world;

@@ -26,9 +26,10 @@
         <div id="hud" hidden>
           <div class="hud-chip" id="world-chip">Potato Patch</div>
           <div class="hud-chip" id="potato-chip">
-            <img src="/art/potato.png" alt="" />
+            <span id="potato-icon">🥔</span>
             <span id="potato-count">0</span>
           </div>
+          <div class="hud-chip" id="ammo-chip">THROW <span id="ammo-count">3</span></div>
           <div class="hud-chip" id="hearts"></div>
           <div class="hud-chip" id="score">000000</div>
           <div class="hud-chip kid-chip">
@@ -44,8 +45,8 @@
             <p class="eyebrow">Three kids. Three worlds. One king hat.</p>
             <h1>Spud Squad</h1>
             <p class="tagline">
-              Jump, stomp, dash, and bounce the leprechauns. Grab potatoes, hit the springs, and
-              knock the King down three times.
+              Jump, stomp, and chuck potatoes like a metal-slug arcade run. Grab spuds for ammo,
+              blast the hats, then knock the King down three times.
             </p>
             <button type="button" class="cta" id="btn-play">Play</button>
           </section>
@@ -134,8 +135,11 @@
           <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
         </div>
         <div class="jump-wrap">
-          <span class="jump-tip">Air tap = trick</span>
-          <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+          <span class="jump-tip">J / F to throw</span>
+          <div class="action-row">
+            <button type="button" id="btn-throw" class="throw" aria-label="Throw potato">SPUD</button>
+            <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+          </div>
         </div>
       </div>
     </div>
