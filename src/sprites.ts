@@ -1,5 +1,3 @@
-import { CELL, FAMILY, SHEET, SHEET_H } from "./art-sheet.ts";
-
 export type Art = {
   boots: HTMLImageElement;
   ace: HTMLImageElement;
@@ -9,11 +7,14 @@ export type Art = {
   family: HTMLImageElement;
 };
 
+const CELL = 96;
+const SHEET_H = 128;
+
 function load(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error("art"));
+    img.onerror = () => reject(new Error(src));
     img.src = src;
   });
 }
@@ -23,23 +24,54 @@ function slice(sheet: HTMLImageElement, index: number): HTMLImageElement {
   c.width = CELL;
   c.height = SHEET_H;
   const ctx = c.getContext("2d")!;
-  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(sheet, index * CELL, 0, CELL, SHEET_H, 0, 0, CELL, SHEET_H);
   const img = new Image();
   img.src = c.toDataURL("image/jpeg", 0.92);
   return img;
 }
 
+function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  ctx.fillStyle = "#14110d";
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = color;
+  ctx.fillRect(8, 8, w - 16, h - 16);
+  ctx.strokeStyle = "#fff6e4";
+  ctx.lineWidth = 6;
+  ctx.strokeRect(14, 14, w - 28, h - 28);
+  ctx.fillStyle = "#fff6e4";
+  ctx.font = "800 28px Fredoka, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(label, w / 2, h / 2 + 10);
+  const img = new Image();
+  img.src = c.toDataURL("image/png");
+  return img;
+}
+
 export async function loadArt(): Promise<Art> {
-  const [sheet, family] = await Promise.all([load(SHEET), load(FAMILY)]);
-  return {
-    boots: slice(sheet, 0),
-    ace: slice(sheet, 1),
-    pip: slice(sheet, 2),
-    lep: slice(sheet, 3),
-    potato: slice(sheet, 4),
-    family,
-  };
+  try {
+    const [sheet, family] = await Promise.all([load("/sheet.jpg"), load("/family-sm.jpg")]);
+    return {
+      boots: slice(sheet, 0),
+      ace: slice(sheet, 1),
+      pip: slice(sheet, 2),
+      lep: slice(sheet, 3),
+      potato: slice(sheet, 4),
+      family,
+    };
+  } catch {
+    return {
+      boots: drawn("BOOTS", "#5aa9e6"),
+      ace: drawn("ACE", "#7dce82"),
+      pip: drawn("PIP", "#f7b267"),
+      lep: drawn("LEP", "#2f9e44"),
+      potato: drawn("SPUD", "#d4a017", 96, 96),
+      family: drawn("SQUAD", "#1a4d2e", 280, 180),
+    };
+  }
 }
 
 export function kidSprite(art: Art, id: "boots" | "ace" | "pip"): HTMLImageElement {
@@ -107,16 +139,8 @@ export function paintOutlined(
   w: number,
   h: number,
 ): void {
-  ctx.save();
-  ctx.shadowColor = "#14110d";
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  ctx.lineWidth = 6;
   ctx.drawImage(img, x - 2, y - 2, w + 4, h + 4);
-  ctx.globalCompositeOperation = "source-over";
   ctx.drawImage(img, x, y, w, h);
-  ctx.restore();
 }
 
 export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p: number): void {
@@ -142,4 +166,3 @@ export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p
     ctx.fill();
   }
 }
-

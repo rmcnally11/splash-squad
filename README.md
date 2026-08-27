@@ -1,6 +1,6 @@
 # Spud Squad
 
-A phone-first Mario-style platformer starring three kids. Jump, stomp, dash, and bounce the leprechauns across **three worlds**, then knock the King down at Rainbow Keep.
+A phone-first arcade platformer starring three kids. Jump, stomp, **throw potatoes**, and blast leprechauns across **three worlds**, then knock the King down at Rainbow Keep.
 
 ## Play
 
@@ -11,7 +11,7 @@ npm run dev
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-On a phone: hold **◀ / ▶** with your left thumb and tap **JUMP** with your right. Tap JUMP again in the air for that kid’s trick. Keyboard: arrows or WASD, space to jump.
+On a phone: hold **◀ / ▶**, tap **JUMP**, and tap **SPUD** to throw. Air-tap JUMP for that kid’s trick. Keyboard: arrows or WASD, space to jump, **J** / **F** to throw.
 
 ## The kids
 
