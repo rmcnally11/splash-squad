@@ -7,7 +7,9 @@ export type Art = {
   lep: HTMLImageElement;
   potato: HTMLImageElement;
   family: HTMLImageElement;
+  dog: HTMLImageElement;
   photoKids: Partial<Record<"boots" | "ace" | "pip", boolean>>;
+  photoDog: boolean;
 };
 
 const CELL = 96;
@@ -90,8 +92,81 @@ function drawn(label: string, color: string, w = 192, h = 192): HTMLImageElement
   return img;
 }
 
+function drawnDog(): HTMLImageElement {
+  const w = 192;
+  const h = 160;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d")!;
+  const stroke = (fn: () => void, fill: string, width = 5): void => {
+    ctx.save();
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = "#14110d";
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    fn();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  };
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(148, 96, 16, 10, 0.7, 0, Math.PI * 2);
+  }, "#3ec6e8");
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(92, 108, 46, 28, 0, 0, Math.PI * 2);
+  }, "#5ad4f0");
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(48, 62, 34, 32, 0, 0, Math.PI * 2);
+  }, "#7de3f5");
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(28, 38, 12, 20, -0.4, 0, Math.PI * 2);
+  }, "#3ec6e8");
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(62, 36, 12, 20, 0.35, 0, Math.PI * 2);
+  }, "#3ec6e8");
+  ctx.fillStyle = "#fff6e4";
+  ctx.beginPath();
+  ctx.ellipse(40, 64, 7, 8, 0, 0, Math.PI * 2);
+  ctx.ellipse(58, 64, 7, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#14110d";
+  ctx.beginPath();
+  ctx.ellipse(41, 65, 3, 3.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(59, 65, 3, 3.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(49, 76, 7, 5, 0, 0, Math.PI * 2);
+  }, "#2a1a0a", 3);
+  stroke(() => {
+    ctx.beginPath();
+    ctx.ellipse(92, 122, 8, 16, 0.1, 0, Math.PI * 2);
+    ctx.ellipse(114, 124, 8, 16, -0.1, 0, Math.PI * 2);
+    ctx.ellipse(70, 124, 8, 16, 0.2, 0, Math.PI * 2);
+    ctx.ellipse(128, 122, 8, 16, -0.15, 0, Math.PI * 2);
+  }, "#2eb4d6");
+  stroke(() => {
+    ctx.beginPath();
+    ctx.roundRect(70, 86, 36, 10, 5);
+  }, "#c41e3a", 3);
+  ctx.fillStyle = "#ffe566";
+  ctx.beginPath();
+  ctx.arc(106, 91, 4, 0, Math.PI * 2);
+  ctx.fill();
+  const img = new Image();
+  img.src = c.toDataURL("image/png");
+  return img;
+}
+
 export async function loadArt(): Promise<Art> {
-  const [bootsPng, acePng, pipPng, lepPng, potatoPng, familyHi, familyLo, sheetFile] = await Promise.all([
+  const [bootsPng, acePng, pipPng, lepPng, potatoPng, familyHi, familyLo, sheetFile, dogPng] = await Promise.all([
     loadSafe("/art/girl-boots.png"),
     loadSafe("/art/boy-ace.png"),
     loadSafe("/art/toddler-pip.png"),
@@ -100,6 +175,7 @@ export async function loadArt(): Promise<Art> {
     loadSafe("/art/family.jpg"),
     loadSafe("/family-sm.jpg"),
     loadSafe("/sheet.jpg"),
+    loadSafe("/art/dog.png"),
   ]);
   const baked = sheetFile ?? (await loadSafe(SHEET));
   const family = familyHi ?? familyLo ?? (await loadSafe(FAMILY)) ?? drawn("SQUAD", "#1a4d2e", 280, 180);
@@ -114,7 +190,9 @@ export async function loadArt(): Promise<Art> {
     lep: lepPng ? knockout(lepPng) : fromSheet(3, "LEP", "#2f9e44"),
     potato: potatoPng ? knockout(potatoPng) : fromSheet(4, "SPUD", "#d4a017"),
     family,
+    dog: dogPng ? knockout(dogPng) : drawnDog(),
     photoKids: {},
+    photoDog: false,
   };
 }
 

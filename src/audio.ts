@@ -70,6 +70,11 @@ export const sfx = {
   stomp(): void {
     beep(180, 0.12, "sawtooth", 0.06);
   },
+  bark(): void {
+    beep(280, 0.06, "square", 0.05);
+    beep(190, 0.1, "sawtooth", 0.06);
+    beep(320, 0.07, "square", 0.04);
+  },
   hurt(): void {
     beep(220, 0.16, "square", 0.06);
     beep(140, 0.2, "square", 0.05);

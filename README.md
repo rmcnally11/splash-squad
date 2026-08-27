@@ -32,7 +32,9 @@ Collect potatoes for ammo. Gold spuds give more.
 | **Ace** | Ground pound. Extra heart. |
 | **Pip** | Dash. Fastest. Fits under beams. |
 
-Cartoons run by default. On the kid picker, tap **Add photo** to put a real face on that kid. Tap the title photo to swap the family shot. Photos stay on this phone and you can switch back to cartoons anytime.
+Cartoons run by default. On the kid picker, tap **Add photo** to put a real face on that kid. Tap **Add dog photo** on Scout to put your dog in the run. Tap the title photo to swap the family shot. Photos stay on this phone and you can switch back to cartoons anytime.
+
+**Scout** follows whoever you pick, snags nearby potatoes, and barks nearby leprechauns flat.
 
 World unlocks and best scores also stay on the device. Switch apps and the run pauses instead of eating a hit.
 

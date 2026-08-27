@@ -93,6 +93,22 @@ body {
   color: var(--lime);
 }
 
+.dog-chip {
+  color: #7de3f5;
+}
+
+#dog-face {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #245c38;
+}
+
+.dog-card {
+  border-color: #5ad4f0;
+}
+
 #kid-face {
   width: 28px;
   height: 28px;

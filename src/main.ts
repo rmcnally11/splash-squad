@@ -20,6 +20,8 @@ const weaponEl = document.getElementById("weapon-chip");
 const throwBtn = document.getElementById("btn-throw");
 const kidName = document.getElementById("kid-name")!;
 const kidFace = document.getElementById("kid-face") as HTMLImageElement | null;
+const dogFace = document.getElementById("dog-face") as HTMLImageElement | null;
+const dogCardFace = document.getElementById("dog-card-face") as HTMLImageElement | null;
 const scoreEl = document.getElementById("score")!;
 const worldEl = document.getElementById("world-chip")!;
 const trickEl = document.getElementById("trick-hint")!;
@@ -36,7 +38,7 @@ let lastClearWasFinal = false;
 let screen = "boot";
 let game: SpudGame | null = null;
 let art: Art | null = null;
-let cartoons: Pick<Art, "boots" | "ace" | "pip" | "family"> | null = null;
+let cartoons: Pick<Art, "boots" | "ace" | "pip" | "family" | "dog"> | null = null;
 let progress: Progress = loadProgress();
 picked = progress.lastKid;
 
@@ -90,6 +92,7 @@ function paintFaces(): void {
     hero.src = art.family.src;
   }
   for (const card of document.querySelectorAll<HTMLElement>(".kid-card")) {
+    if (card.classList.contains("dog-card")) continue;
     const id = card.dataset.kid as KidId;
     const img = card.querySelector("img");
     if (img) img.src = faceFor(id);
@@ -97,6 +100,14 @@ function paintFaces(): void {
     const clear = card.querySelector<HTMLButtonElement>(".photo-clear");
     if (clear) clear.hidden = !art.photoKids[id];
   }
+  const dogCard = document.querySelector<HTMLElement>(".dog-card");
+  if (dogCard) {
+    dogCard.classList.toggle("costumed", art.photoDog);
+    const clear = dogCard.querySelector<HTMLButtonElement>(".photo-clear");
+    if (clear) clear.hidden = !art.photoDog;
+  }
+  if (dogFace) dogFace.src = art.dog.src;
+  if (dogCardFace) dogCardFace.src = art.dog.src;
   if (kidFace) kidFace.src = faceFor(picked);
   if (winKid) winKid.src = faceFor(picked);
 }
@@ -138,7 +149,10 @@ async function applySlot(slot: PhotoSlot, src: string): Promise<void> {
   if (!art) return;
   const img = await loadImage(src);
   if (slot === "family") art.family = img;
-  else {
+  else if (slot === "dog") {
+    art.dog = img;
+    art.photoDog = true;
+  } else {
     art[slot] = img;
     art.photoKids[slot] = true;
   }
@@ -152,7 +166,13 @@ async function onPhotoFile(slot: PhotoSlot, file: File | undefined): Promise<voi
     note("Putting that face on the squad…");
     const url = await savePhoto(slot, file);
     await applySlot(slot, url);
-    note(slot === "family" ? "Title photo updated." : `${KIDS[slot].name} is running as your photo.`);
+    note(
+      slot === "family"
+        ? "Title photo updated."
+        : slot === "dog"
+          ? "Scout is running as your dog."
+          : `${KIDS[slot].name} is running as your photo.`,
+    );
   } catch (err) {
     note(err instanceof Error ? err.message : "Could not use that picture.");
   }
@@ -161,11 +181,17 @@ async function onPhotoFile(slot: PhotoSlot, file: File | undefined): Promise<voi
 async function restoreCartoon(slot: Exclude<PhotoSlot, "family">): Promise<void> {
   if (!art || !cartoons) return;
   await clearPhoto(slot);
-  art[slot] = cartoons[slot];
-  delete art.photoKids[slot];
+  if (slot === "dog") {
+    art.dog = cartoons.dog;
+    art.photoDog = false;
+    note("Scout is a cartoon again.");
+  } else {
+    art[slot] = cartoons[slot];
+    delete art.photoKids[slot];
+    note(`${KIDS[slot].name} is a cartoon again.`);
+  }
   game?.setArt(art);
   paintFaces();
-  note(`${KIDS[slot].name} is a cartoon again.`);
 }
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game")!;
@@ -178,9 +204,10 @@ void (async () => {
       ace: art.ace,
       pip: art.pip,
       family: art.family,
+      dog: art.dog,
     };
     const saved = await loadPhotoUrls();
-    for (const slot of ["boots", "ace", "pip", "family"] as const) {
+    for (const slot of ["boots", "ace", "pip", "family", "dog"] as const) {
       const url = saved[slot];
       if (url) await applySlot(slot, url);
     }
@@ -224,7 +251,23 @@ playBtn?.addEventListener("click", () => {
 
 document.getElementById("btn-reload")?.addEventListener("click", () => location.reload());
 
+const dogCard = document.querySelector<HTMLElement>(".dog-card");
+dogCard?.querySelector<HTMLInputElement>('input[type="file"]')?.addEventListener("change", (ev) => {
+  const inputEl = ev.target as HTMLInputElement;
+  void onPhotoFile("dog", inputEl.files?.[0]);
+  inputEl.value = "";
+});
+dogCard?.querySelector(".photo-clear")?.addEventListener("click", () => {
+  void restoreCartoon("dog");
+});
+dogCard?.addEventListener("dragover", (ev) => ev.preventDefault());
+dogCard?.addEventListener("drop", (ev) => {
+  ev.preventDefault();
+  void onPhotoFile("dog", (ev as DragEvent).dataTransfer?.files[0]);
+});
+
 for (const card of document.querySelectorAll<HTMLElement>(".kid-card")) {
+  if (card.classList.contains("dog-card")) continue;
   const id = card.dataset.kid as KidId;
   card.querySelector(".kid-pick")?.addEventListener("click", () => {
     picked = id;

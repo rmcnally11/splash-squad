@@ -123,6 +123,15 @@ export class SpudGame {
   private shake = 0;
   private landSquash = 0;
   private ride: Mover | null = null;
+  private pupX = 40;
+  private pupY = GROUND - 36;
+  private pupVx = 0;
+  private pupVy = 0;
+  private pupFacing = 1;
+  private pupW = 36;
+  private pupH = 32;
+  private pupBark = 0;
+  private pupGround = true;
 
   constructor(canvas: HTMLCanvasElement, art: Art, hooks: GameHooks, input: InputState) {
     this.canvas = canvas;
@@ -188,6 +197,13 @@ export class SpudGame {
     this.shake = 0;
     this.landSquash = 0;
     this.ride = null;
+    this.pupX = 40;
+    this.pupY = GROUND - this.pupH;
+    this.pupVx = 0;
+    this.pupVy = 0;
+    this.pupFacing = 1;
+    this.pupBark = 0;
+    this.pupGround = true;
     sfx.startMusic(this.world.id);
     this.hud();
     this.resize();
@@ -313,9 +329,14 @@ export class SpudGame {
       this.y = this.spawnY;
       this.vx = 0;
       this.vy = 0;
+      this.pupX = this.spawnX - 48;
+      this.pupY = this.spawnY + this.kid.h - this.pupH;
+      this.pupVx = 0;
+      this.pupVy = 0;
     }
 
     this.x = clamp(this.x, 0, this.world.w - this.kid.w);
+    this.stepPup(dt);
     this.touchSprings();
     this.touchPickups();
     this.touchPotatoes();
@@ -844,6 +865,7 @@ export class SpudGame {
       paintSpud(ctx, this.art.potato, s.x - 14, s.y - 14, this.time, s.hot, s.spin, s.hot ? 34 : 26);
     }
     if (this.world.boss?.alive) this.paintBoss(ctx, this.world.boss);
+    this.paintPup(ctx);
     this.paintKid(ctx);
     for (const b of this.booms) {
       paintBoom(ctx, b.x, b.y, 1 - b.life / b.max, b.big);
@@ -1125,6 +1147,100 @@ export class SpudGame {
     ctx.fillRect(b.x - 2, b.y - 18, b.w + 4, 12);
     ctx.fillStyle = "#e23d12";
     ctx.fillRect(b.x, b.y - 16, (b.w * b.hp) / b.max, 8);
+  }
+
+  private stepPup(dt: number): void {
+    this.pupBark = Math.max(0, this.pupBark - dt);
+    const heel = this.x + (this.facing < 0 ? this.kid.w + 10 : -this.pupW - 10);
+    const wantX = clamp(heel, 0, this.world.w - this.pupW);
+    const wantY = this.y + this.kid.h - this.pupH;
+    this.pupFacing = this.x >= this.pupX ? 1 : -1;
+    this.pupVx += (wantX - this.pupX) * 14 * dt;
+    this.pupVx *= Math.max(0, 1 - dt * 6);
+    this.pupX += this.pupVx * dt;
+    if (this.vy < -200 && this.pupGround) {
+      this.pupVy = -640;
+      this.pupGround = false;
+    }
+    this.pupVy = Math.min(980, this.pupVy + 1800 * dt);
+    this.pupY += this.pupVy * dt;
+    if (this.pupY >= wantY) {
+      this.pupY = wantY;
+      this.pupVy = 0;
+      this.pupGround = true;
+    }
+    if (this.pupY > WORLD_H) {
+      this.pupX = this.x - this.facing * 40;
+      this.pupY = wantY;
+      this.pupVy = 0;
+    }
+    this.pupSnag();
+    this.pupBarkHats();
+  }
+
+  private pupSnag(): void {
+    for (const p of this.potatoes) {
+      if (p.taken) continue;
+      if (!overlap(this.pupX, this.pupY, this.pupW, this.pupH, p.x, p.y, 28, 28)) continue;
+      p.taken = true;
+      this.ammo += p.gold ? 2 : 1;
+      const pts = (p.gold ? 220 : 80) * (1 + this.combo);
+      this.addScore(pts, p.x, p.y, p.gold ? "SCOUT GOLD" : "SCOUT");
+      if (p.gold) sfx.gold();
+      else sfx.collect();
+      this.burst(p.x + 14, p.y + 14, "#5ad4f0", 10);
+      this.hud();
+    }
+  }
+
+  private pupBarkHats(): void {
+    if (this.pupBark > 0) return;
+    for (const e of this.leps) {
+      if (e.flat > 0) continue;
+      const reach = 54;
+      if (!overlap(this.pupX - 8, this.pupY - 8, this.pupW + 16, this.pupH + 16, e.x, e.y, e.w, e.h)) {
+        continue;
+      }
+      if (Math.abs(this.pupX - e.x) > reach) continue;
+      e.flat = 1.8;
+      this.pupBark = 0.7;
+      sfx.bark();
+      this.addScore(150, e.x, e.y, "ARF!");
+      this.float(this.pupX, this.pupY - 18, "ARF!", "#5ad4f0");
+      this.burst(e.x + e.w / 2, e.y, "#5ad4f0", 8);
+      return;
+    }
+  }
+
+  private paintPup(ctx: CanvasRenderingContext2D): void {
+    const bob = this.pupGround && Math.abs(this.pupVx) > 20 ? Math.sin(this.time * 22) * 2 : 0;
+    ctx.save();
+    ctx.translate(this.pupX + this.pupW / 2, this.pupY + this.pupH);
+    ctx.scale(this.pupFacing, 1);
+    ctx.fillStyle = "rgba(20, 16, 10, 0.24)";
+    ctx.beginPath();
+    ctx.ellipse(0, -2, this.pupW * 0.4, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const x = -this.pupW / 2 - 2;
+    const y = -this.pupH - 4 + bob;
+    const w = this.pupW + 4;
+    const h = this.pupH + 6;
+    if (this.art.photoDog) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, -h * 0.48, w * 0.48, h * 0.5, 0, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(this.art.dog, x, y, w, h);
+      ctx.restore();
+      ctx.strokeStyle = "#14110d";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, -h * 0.48, w * 0.48, h * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      paintOutlined(ctx, this.art.dog, x, y, w, h);
+    }
+    ctx.restore();
   }
 
   private paintKid(ctx: CanvasRenderingContext2D): void {

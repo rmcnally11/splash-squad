@@ -37,6 +37,10 @@
             <img id="kid-face" alt="" />
             <span id="kid-name">Boots</span>
           </div>
+          <div class="hud-chip dog-chip">
+            <img id="dog-face" alt="" />
+            <span>Scout</span>
+          </div>
           <button type="button" id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
         </div>
         <p id="trick-hint" hidden></p>
@@ -63,8 +67,8 @@
             <p class="eyebrow">Three kids. Three worlds. One king hat.</p>
             <h1>Spud Squad</h1>
             <p class="tagline">
-              Jump, stomp, and chuck potatoes. Grab a red blaster crate to upgrade from a single
-              spud to rapid fire, a three-way spread, then a hot potato bomb.
+              Jump, stomp, and chuck potatoes. Scout the dog tags along, snags spare spuds, and
+              barks hats flat. Grab a red blaster crate to upgrade your throw.
             </p>
             <p class="best-line" id="best-line" hidden>Best run 000000</p>
             <button type="button" class="cta" id="btn-play" disabled>Play</button>
@@ -74,7 +78,7 @@
             <p class="eyebrow">Pick who runs</p>
             <h2>The squad</h2>
             <p class="tagline photo-hint">
-              Cartoons run by default. Drop a kid photo on a card and they jump as that face.
+              Cartoons run by default. Drop a kid photo on a card, or a dog photo on Scout.
             </p>
             <div class="cards">
               <div class="kid-card" data-kid="boots">
@@ -109,6 +113,18 @@
                 </button>
                 <label class="photo-btn">
                   Add photo
+                  <input type="file" accept="image/*" hidden />
+                </label>
+                <button type="button" class="ghost photo-clear" hidden>Back to cartoon</button>
+              </div>
+              <div class="kid-card dog-card" data-slot="dog">
+                <div class="kid-pick">
+                  <img id="dog-card-face" alt="Scout" />
+                  <strong>Scout</strong>
+                  <span>Family dog. Follows whoever runs, snags potatoes, barks hats flat.</span>
+                </div>
+                <label class="photo-btn">
+                  Add dog photo
                   <input type="file" accept="image/*" hidden />
                 </label>
                 <button type="button" class="ghost photo-clear" hidden>Back to cartoon</button>

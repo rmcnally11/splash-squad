@@ -1,4 +1,4 @@
-export type PhotoSlot = "boots" | "ace" | "pip" | "family";
+export type PhotoSlot = "boots" | "ace" | "pip" | "family" | "dog";
 
 const DB_NAME = "spud-squad";
 const STORE = "photos";
@@ -31,7 +31,7 @@ export async function loadPhotoUrls(): Promise<Partial<Record<PhotoSlot, string>
     const db = await openDb();
     const tx = db.transaction(STORE, "readonly");
     const store = tx.objectStore(STORE);
-    const slots: PhotoSlot[] = ["boots", "ace", "pip", "family"];
+    const slots: PhotoSlot[] = ["boots", "ace", "pip", "family", "dog"];
     const out: Partial<Record<PhotoSlot, string>> = {};
     await Promise.all(
       slots.map(
