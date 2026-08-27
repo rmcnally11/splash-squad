@@ -7,6 +7,7 @@ export type Art = {
   lep: HTMLImageElement;
   potato: HTMLImageElement;
   family: HTMLImageElement;
+  photoKids: Partial<Record<"boots" | "ace" | "pip", boolean>>;
 };
 
 const CELL = 96;
@@ -113,6 +114,7 @@ export async function loadArt(): Promise<Art> {
     lep: lepPng ? knockout(lepPng) : fromSheet(3, "LEP", "#2f9e44"),
     potato: potatoPng ? knockout(potatoPng) : fromSheet(4, "SPUD", "#d4a017"),
     family,
+    photoKids: {},
   };
 }
 

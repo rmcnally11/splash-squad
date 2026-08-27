@@ -34,6 +34,7 @@
           <div class="hud-chip" id="hearts"></div>
           <div class="hud-chip" id="score">000000</div>
           <div class="hud-chip kid-chip">
+            <img id="kid-face" alt="" />
             <span id="kid-name">Boots</span>
           </div>
           <button type="button" id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
@@ -41,37 +42,79 @@
         <p id="trick-hint" hidden></p>
 
         <div id="overlay" class="overlay">
-          <section class="panel title-panel" data-screen="title">
-            <img class="family-hero" src="/art/family.jpg" alt="The three kids" />
+          <section class="panel title-panel" data-screen="boot">
+            <p class="eyebrow">Spud Squad</p>
+            <h2>Loading the patch…</h2>
+            <p class="tagline">Cartoons, potatoes, and the King hat.</p>
+          </section>
+
+          <section class="panel end-panel" data-screen="error" hidden>
+            <h2>Couldn’t start</h2>
+            <p class="tagline" id="error-copy">Something broke while loading the game.</p>
+            <button type="button" class="cta" id="btn-reload">Reload</button>
+          </section>
+
+          <section class="panel title-panel" data-screen="title" hidden>
+            <label class="family-swap">
+              <img class="family-hero" src="/art/family.jpg" alt="The three kids" />
+              <span>Tap the photo to use yours on the title</span>
+              <input id="family-file" type="file" accept="image/*" hidden />
+            </label>
             <p class="eyebrow">Three kids. Three worlds. One king hat.</p>
             <h1>Spud Squad</h1>
             <p class="tagline">
               Jump, stomp, and chuck potatoes. Grab a red blaster crate to upgrade from a single
               spud to rapid fire, a three-way spread, then a hot potato bomb.
             </p>
-            <button type="button" class="cta" id="btn-play">Play</button>
+            <p class="best-line" id="best-line" hidden>Best run 000000</p>
+            <button type="button" class="cta" id="btn-play" disabled>Play</button>
           </section>
 
           <section class="panel pick-panel" data-screen="pick" hidden>
             <p class="eyebrow">Pick who runs</p>
             <h2>The squad</h2>
+            <p class="tagline photo-hint">
+              Cartoons run by default. Drop a kid photo on a card and they jump as that face.
+            </p>
             <div class="cards">
-              <button type="button" class="kid-card" data-kid="boots">
-                <img src="/art/girl-boots.png" alt="Boots" />
-                <strong>Boots</strong>
-                <span>Air JUMP for a second leap. Highest bounce off a hat.</span>
-              </button>
-              <button type="button" class="kid-card" data-kid="ace">
-                <img src="/art/boy-ace.png" alt="Ace" />
-                <strong>Ace</strong>
-                <span>Air JUMP to ground-pound. Extra heart. Long stomps.</span>
-              </button>
-              <button type="button" class="kid-card" data-kid="pip">
-                <img src="/art/toddler-pip.png" alt="Pip" />
-                <strong>Pip</strong>
-                <span>Air JUMP to dash. Fastest. Slides under low beams.</span>
-              </button>
+              <div class="kid-card" data-kid="boots">
+                <button type="button" class="kid-pick">
+                  <img src="/art/girl-boots.png" alt="Boots" />
+                  <strong>Boots</strong>
+                  <span>Air JUMP for a second leap. Highest bounce off a hat.</span>
+                </button>
+                <label class="photo-btn">
+                  Add photo
+                  <input type="file" accept="image/*" hidden />
+                </label>
+                <button type="button" class="ghost photo-clear" hidden>Back to cartoon</button>
+              </div>
+              <div class="kid-card" data-kid="ace">
+                <button type="button" class="kid-pick">
+                  <img src="/art/boy-ace.png" alt="Ace" />
+                  <strong>Ace</strong>
+                  <span>Air JUMP to ground-pound. Extra heart. Long stomps.</span>
+                </button>
+                <label class="photo-btn">
+                  Add photo
+                  <input type="file" accept="image/*" hidden />
+                </label>
+                <button type="button" class="ghost photo-clear" hidden>Back to cartoon</button>
+              </div>
+              <div class="kid-card" data-kid="pip">
+                <button type="button" class="kid-pick">
+                  <img src="/art/toddler-pip.png" alt="Pip" />
+                  <strong>Pip</strong>
+                  <span>Air JUMP to dash. Fastest. Slides under low beams.</span>
+                </button>
+                <label class="photo-btn">
+                  Add photo
+                  <input type="file" accept="image/*" hidden />
+                </label>
+                <button type="button" class="ghost photo-clear" hidden>Back to cartoon</button>
+              </div>
             </div>
+            <p class="photo-note" id="photo-note" hidden></p>
           </section>
 
           <section class="panel worlds-panel" data-screen="worlds" hidden>
@@ -82,16 +125,19 @@
                 <span class="world-num">1</span>
                 <strong>Potato Patch</strong>
                 <span>Sunny fields, springs, and your first flying hat.</span>
+                <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="1">
                 <span class="world-num">2</span>
                 <strong>Lucky Mine</strong>
                 <span>Glow crystals, moving ledges, low ceilings.</span>
+                <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="2">
                 <span class="world-num">3</span>
                 <strong>Rainbow Keep</strong>
                 <span>Castle climb. Stomp the King three times.</span>
+                <em class="world-best" hidden></em>
               </button>
             </div>
             <button type="button" class="ghost" id="btn-back-pick">Change kid</button>
@@ -113,7 +159,8 @@
           </section>
 
           <section class="panel end-panel" data-screen="win" hidden>
-            <img class="end-art" src="/art/potato.png" alt="" />
+            <img class="end-art kid-win" id="win-kid" src="/art/girl-boots.png" alt="" />
+            <img class="family-hero win-family" src="/art/family.jpg" alt="" />
             <h2>Squad wins!</h2>
             <p class="tagline" id="win-copy">The King is down. The potatoes are yours.</p>
             <button type="button" class="cta" id="btn-again">Run it from the start</button>

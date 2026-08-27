@@ -97,4 +97,22 @@ export function bindControls(input: InputState): void {
   window.addEventListener("keyup", up, true);
   document.addEventListener("keydown", down, true);
   document.addEventListener("keyup", up, true);
+
+  const clear = (): void => releaseAll(input);
+  window.addEventListener("blur", clear);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) clear();
+  });
+}
+
+export function releaseAll(input: InputState): void {
+  input.left = false;
+  input.right = false;
+  input.jump = false;
+  input.throw = false;
+  input.jumpPressed = false;
+  input.throwPressed = false;
+  for (const id of ["btn-left", "btn-right", "btn-jump", "btn-throw"]) {
+    document.getElementById(id)?.classList.remove("on");
+  }
 }

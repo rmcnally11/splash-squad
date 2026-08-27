@@ -136,6 +136,10 @@ export class SpudGame {
     this.world = this.worlds[0];
   }
 
+  setArt(art: Art): void {
+    this.art = art;
+  }
+
   start(id: KidId, worldId = 0, keepScore = false): void {
     this.kid = KIDS[id];
     this.worlds = makeWorlds();
@@ -311,6 +315,7 @@ export class SpudGame {
       this.vy = 0;
     }
 
+    this.x = clamp(this.x, 0, this.world.w - this.kid.w);
     this.touchSprings();
     this.touchPickups();
     this.touchPotatoes();
@@ -1137,7 +1142,25 @@ export class SpudGame {
     ctx.beginPath();
     ctx.ellipse(0, -4, this.kid.w * 0.42, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    paintOutlined(ctx, img, -this.kid.w / 2 - 4, -this.kid.h - 4 + run * 2, this.kid.w + 8, this.kid.h + 6);
+    const x = -this.kid.w / 2 - 4;
+    const y = -this.kid.h - 4 + run * 2;
+    const w = this.kid.w + 8;
+    const h = this.kid.h + 6;
+    if (this.art.photoKids[this.kid.id]) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(0, -h * 0.48, w * 0.46, h * 0.5, 0, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, x, y, w, h);
+      ctx.restore();
+      ctx.strokeStyle = "#14110d";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, -h * 0.48, w * 0.46, h * 0.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      paintOutlined(ctx, img, x, y, w, h);
+    }
     ctx.restore();
   }
 }
