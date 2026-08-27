@@ -184,9 +184,9 @@ export async function loadArt(): Promise<Art> {
     baked ? slice(baked, index) : drawn(label, color);
 
   return {
-    boots: bootsPng ? knockout(bootsPng) : fromSheet(0, "BOOTS", "#5aa9e6"),
-    ace: acePng ? knockout(acePng) : fromSheet(1, "ACE", "#7dce82"),
-    pip: pipPng ? knockout(pipPng) : fromSheet(2, "PIP", "#f7b267"),
+    boots: bootsPng ? knockout(bootsPng) : fromSheet(0, "MALLORY", "#5aa9e6"),
+    ace: acePng ? knockout(acePng) : fromSheet(1, "LUKE", "#7dce82"),
+    pip: pipPng ? knockout(pipPng) : fromSheet(2, "CONNOR", "#f7b267"),
     lep: lepPng ? knockout(lepPng) : fromSheet(3, "LEP", "#2f9e44"),
     potato: potatoPng ? knockout(potatoPng) : fromSheet(4, "SPUD", "#d4a017"),
     family,

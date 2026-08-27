@@ -97,7 +97,7 @@ export type WorldDef = {
 export const KIDS: Record<KidId, KidStats> = {
   boots: {
     id: "boots",
-    name: "Boots",
+    name: "Mallory",
     speed: 235,
     jump: 920,
     w: 40,
@@ -109,7 +109,7 @@ export const KIDS: Record<KidId, KidStats> = {
   },
   ace: {
     id: "ace",
-    name: "Ace",
+    name: "Luke",
     speed: 210,
     jump: 900,
     w: 46,
@@ -121,7 +121,7 @@ export const KIDS: Record<KidId, KidStats> = {
   },
   pip: {
     id: "pip",
-    name: "Pip",
+    name: "Connor",
     speed: 280,
     jump: 880,
     w: 32,

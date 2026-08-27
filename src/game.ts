@@ -1185,7 +1185,7 @@ export class SpudGame {
       p.taken = true;
       this.ammo += p.gold ? 2 : 1;
       const pts = (p.gold ? 220 : 80) * (1 + this.combo);
-      this.addScore(pts, p.x, p.y, p.gold ? "SCOUT GOLD" : "SCOUT");
+      this.addScore(pts, p.x, p.y, p.gold ? "PIPEY GOLD" : "PIPEY");
       if (p.gold) sfx.gold();
       else sfx.collect();
       this.burst(p.x + 14, p.y + 14, "#5ad4f0", 10);

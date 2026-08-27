@@ -170,7 +170,7 @@ async function onPhotoFile(slot: PhotoSlot, file: File | undefined): Promise<voi
       slot === "family"
         ? "Title photo updated."
         : slot === "dog"
-          ? "Scout is running as your dog."
+          ? "Pipey is running as your dog."
           : `${KIDS[slot].name} is running as your photo.`,
     );
   } catch (err) {
@@ -184,7 +184,7 @@ async function restoreCartoon(slot: Exclude<PhotoSlot, "family">): Promise<void>
   if (slot === "dog") {
     art.dog = cartoons.dog;
     art.photoDog = false;
-    note("Scout is a cartoon again.");
+    note("Pipey is a cartoon again.");
   } else {
     art[slot] = cartoons[slot];
     delete art.photoKids[slot];
