@@ -86,7 +86,7 @@ body {
 .hud-chip img {
   width: 22px;
   height: 22px;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .kid-chip {
@@ -97,7 +97,8 @@ body {
   color: #7de3f5;
 }
 
-#dog-face {
+#dog-face,
+#kid-face {
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -107,14 +108,6 @@ body {
 
 .dog-card {
   border-color: #5ad4f0;
-}
-
-#kid-face {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #245c38;
 }
 
 .best-line {
@@ -297,7 +290,7 @@ body {
   width: 100%;
   height: 210px;
   object-fit: cover;
-  object-position: center 20%;
+  object-position: center 42%;
   border-radius: 18px;
   border: 3px solid #f3d27a;
   display: block;
