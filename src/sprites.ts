@@ -1,4 +1,9 @@
-import { ART } from "./art-data.ts";
+import { ACE } from "./art-ace.ts";
+import { BOOTS } from "./art-boots.ts";
+import { FAMILY } from "./art-family.ts";
+import { LEP } from "./art-lep.ts";
+import { PIP } from "./art-pip.ts";
+import { POTATO } from "./art-potato.ts";
 
 export type Art = {
   boots: HTMLImageElement;
@@ -20,12 +25,12 @@ function load(src: string): Promise<HTMLImageElement> {
 
 export async function loadArt(): Promise<Art> {
   const [boots, ace, pip, lep, potato, family] = await Promise.all([
-    load(ART.boots),
-    load(ART.ace),
-    load(ART.pip),
-    load(ART.lep),
-    load(ART.potato),
-    load(ART.family),
+    load(BOOTS),
+    load(ACE),
+    load(PIP),
+    load(LEP),
+    load(POTATO),
+    load(FAMILY),
   ]);
   return { boots, ace, pip, lep, potato, family };
 }
