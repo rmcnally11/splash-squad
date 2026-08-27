@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -24,25 +24,28 @@
       <div class="stage">
         <canvas id="game"></canvas>
         <div id="hud" hidden>
+          <div class="hud-chip" id="world-chip">Potato Patch</div>
           <div class="hud-chip" id="potato-chip">
             <img src="/art/potato.png" alt="" />
             <span id="potato-count">0</span>
           </div>
           <div class="hud-chip" id="hearts"></div>
+          <div class="hud-chip" id="score">000000</div>
           <div class="hud-chip kid-chip">
             <span id="kid-name">Boots</span>
           </div>
           <button type="button" id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
         </div>
+        <p id="trick-hint" hidden></p>
 
         <div id="overlay" class="overlay">
           <section class="panel title-panel" data-screen="title">
             <img class="family-hero" src="/art/family.jpg" alt="The three kids" />
-            <p class="eyebrow">The kids vs the leprechauns</p>
+            <p class="eyebrow">Three kids. Three worlds. One king hat.</p>
             <h1>Spud Squad</h1>
             <p class="tagline">
-              Jump. Grab every potato. Dodge those mean little leprechauns. Race home to the red
-              door.
+              Jump, stomp, dash, and bounce the leprechauns. Grab potatoes, hit the springs, and
+              knock the King down three times.
             </p>
             <button type="button" class="cta" id="btn-play">Play</button>
           </section>
@@ -54,41 +57,72 @@
               <button type="button" class="kid-card" data-kid="boots">
                 <img src="/art/girl-boots.png" alt="Boots" />
                 <strong>Boots</strong>
-                <span>Cowboy-boot super jump. Bounce even higher off a hat.</span>
+                <span>Air JUMP for a second leap. Highest bounce off a hat.</span>
               </button>
               <button type="button" class="kid-card" data-kid="ace">
                 <img src="/art/boy-ace.png" alt="Ace" />
                 <strong>Ace</strong>
-                <span>Extra heart. A stomp keeps leprechauns down longer.</span>
+                <span>Air JUMP to ground-pound. Extra heart. Long stomps.</span>
               </button>
               <button type="button" class="kid-card" data-kid="pip">
                 <img src="/art/toddler-pip.png" alt="Pip" />
                 <strong>Pip</strong>
-                <span>Fastest and smallest. Squeezes under low ceilings.</span>
+                <span>Air JUMP to dash. Fastest. Slides under low beams.</span>
               </button>
             </div>
           </section>
 
+          <section class="panel worlds-panel" data-screen="worlds" hidden>
+            <p class="eyebrow">Pick a world</p>
+            <h2>The run</h2>
+            <div class="world-list">
+              <button type="button" class="world-card" data-world="0">
+                <span class="world-num">1</span>
+                <strong>Potato Patch</strong>
+                <span>Sunny fields, springs, and your first flying hat.</span>
+              </button>
+              <button type="button" class="world-card" data-world="1">
+                <span class="world-num">2</span>
+                <strong>Lucky Mine</strong>
+                <span>Glow crystals, moving ledges, low ceilings.</span>
+              </button>
+              <button type="button" class="world-card" data-world="2">
+                <span class="world-num">3</span>
+                <strong>Rainbow Keep</strong>
+                <span>Castle climb. Stomp the King three times.</span>
+              </button>
+            </div>
+            <button type="button" class="ghost" id="btn-back-pick">Change kid</button>
+          </section>
+
           <section class="panel end-panel" data-screen="pause" hidden>
             <h2>Paused</h2>
-            <p class="tagline">Thumbs off. Potatoes still count when you come back.</p>
+            <p class="tagline">Score and potatoes stay put. Thumbs off for a second.</p>
             <button type="button" class="cta" id="btn-resume">Keep running</button>
-            <button type="button" class="ghost" id="btn-quit">Change kid</button>
+            <button type="button" class="ghost" id="btn-quit">World map</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="clear" hidden>
+            <img class="end-art" src="/art/potato.png" alt="" />
+            <h2>World clear!</h2>
+            <p class="tagline" id="clear-copy">Nice. The next world just unlocked.</p>
+            <button type="button" class="cta" id="btn-next">Next world</button>
+            <button type="button" class="ghost" id="btn-worlds">World map</button>
           </section>
 
           <section class="panel end-panel" data-screen="win" hidden>
             <img class="end-art" src="/art/potato.png" alt="" />
-            <h2>Home!</h2>
-            <p class="tagline" id="win-copy">You brought the potatoes back to the red door.</p>
-            <button type="button" class="cta" id="btn-again">Run it again</button>
+            <h2>Squad wins!</h2>
+            <p class="tagline" id="win-copy">The King is down. The potatoes are yours.</p>
+            <button type="button" class="cta" id="btn-again">Run it from the start</button>
             <button type="button" class="ghost" id="btn-other">Pick another kid</button>
           </section>
 
           <section class="panel end-panel" data-screen="lose" hidden>
             <img class="end-art lep" src="/art/leprechaun.png" alt="" />
             <h2>Caught</h2>
-            <p class="tagline">The leprechauns got the last laugh. Try another kid — or the same one.</p>
-            <button type="button" class="cta" id="btn-retry">Try again</button>
+            <p class="tagline">Hats got the last laugh. Same world, same kid — or switch it up.</p>
+            <button type="button" class="cta" id="btn-retry">Try this world again</button>
             <button type="button" class="ghost" id="btn-lose-pick">Change kid</button>
           </section>
         </div>
@@ -99,7 +133,10 @@
           <button type="button" id="btn-left" class="pad" aria-label="Left">◀</button>
           <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
         </div>
-        <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+        <div class="jump-wrap">
+          <span class="jump-tip">Air tap = trick</span>
+          <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

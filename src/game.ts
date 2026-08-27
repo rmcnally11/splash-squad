@@ -4,13 +4,16 @@ import {
   GROUND,
   KIDS,
   WORLD_H,
-  WORLD_W,
-  makeLevel,
+  makeWorlds,
+  type Boss,
   type KidId,
   type KidStats,
   type Lep,
+  type Mover,
   type Platform,
   type Potato,
+  type Shot,
+  type WorldDef,
 } from "./level.ts";
 import { kidSprite, type Art } from "./sprites.ts";
 
@@ -25,9 +28,24 @@ type Particle = {
   size: number;
 };
 
+type Floater = { x: number; y: number; text: string; life: number; color: string };
+
+export type HudInfo = {
+  hearts: number;
+  max: number;
+  got: number;
+  total: number;
+  name: string;
+  score: number;
+  combo: number;
+  world: string;
+  star: number;
+  trick: string;
+};
+
 export type GameHooks = {
-  onHud: (hearts: number, max: number, got: number, total: number, name: string) => void;
-  onWin: (got: number, total: number) => void;
+  onHud: (info: HudInfo) => void;
+  onClear: (world: string, score: number, got: number, total: number, last: boolean) => void;
   onLose: () => void;
 };
 
@@ -38,10 +56,12 @@ export class SpudGame {
   private hooks: GameHooks;
   private input: InputState;
   private kid: KidStats;
+  private worlds = makeWorlds();
+  private world!: WorldDef;
   private platforms: Platform[] = [];
   private potatoes: Potato[] = [];
   private leps: Lep[] = [];
-  private doorX = 0;
+  private shots: Shot[] = [];
   private x = 80;
   private y = GROUND - 68;
   private vx = 0;
@@ -50,8 +70,13 @@ export class SpudGame {
   private onGround = false;
   private coyote = 0;
   private jumpBuf = 0;
+  private airUsed = false;
+  private dashT = 0;
+  private pound = false;
   private hearts = 3;
+  private maxHearts = 3;
   private hurt = 0;
+  private star = 0;
   private won = false;
   private dead = false;
   private camX = 0;
@@ -59,10 +84,19 @@ export class SpudGame {
   private viewW = 420;
   private viewH = 640;
   private particles: Particle[] = [];
+  private floats: Floater[] = [];
   private time = 0;
   private last = 0;
   private raf = 0;
   private running = false;
+  private score = 0;
+  private combo = 0;
+  private comboT = 0;
+  private spawnX = 90;
+  private spawnY = GROUND - 68;
+  private shake = 0;
+  private landSquash = 0;
+  private ride: Mover | null = null;
 
   constructor(canvas: HTMLCanvasElement, art: Art, hooks: GameHooks, input: InputState) {
     this.canvas = canvas;
@@ -73,15 +107,17 @@ export class SpudGame {
     this.hooks = hooks;
     this.input = input;
     this.kid = KIDS.boots;
+    this.world = this.worlds[0];
   }
 
-  start(id: KidId): void {
+  start(id: KidId, worldId = 0, keepScore = false): void {
     this.kid = KIDS[id];
-    const level = makeLevel();
-    this.platforms = level.platforms;
-    this.potatoes = level.potatoes;
-    this.leps = level.leps;
-    this.doorX = level.doorX;
+    this.worlds = makeWorlds();
+    this.world = this.worlds[worldId] ?? this.worlds[0];
+    this.platforms = this.world.platforms;
+    this.potatoes = this.world.potatoes;
+    this.leps = this.world.leps;
+    this.shots = [];
     this.x = 90;
     this.y = GROUND - this.kid.h;
     this.vx = 0;
@@ -90,16 +126,31 @@ export class SpudGame {
     this.onGround = true;
     this.coyote = 0;
     this.jumpBuf = 0;
+    this.airUsed = false;
+    this.dashT = 0;
+    this.pound = false;
     this.hearts = this.kid.hearts;
+    this.maxHearts = this.kid.hearts;
     this.hurt = 0;
+    this.star = 0;
     this.won = false;
     this.dead = false;
     this.camX = 0;
     this.camY = 80;
     this.particles = [];
+    this.floats = [];
     this.time = 0;
     this.last = performance.now();
     this.running = true;
+    if (!keepScore) this.score = 0;
+    this.combo = 0;
+    this.comboT = 0;
+    this.spawnX = 90;
+    this.spawnY = GROUND - this.kid.h;
+    this.shake = 0;
+    this.landSquash = 0;
+    this.ride = null;
+    sfx.startMusic(this.world.id);
     this.hud();
     this.resize();
     cancelAnimationFrame(this.raf);
@@ -109,12 +160,14 @@ export class SpudGame {
   stop(): void {
     this.running = false;
     cancelAnimationFrame(this.raf);
+    sfx.stopMusic();
   }
 
   resume(): void {
     if (this.running || this.won || this.dead) return;
     this.running = true;
     this.last = performance.now();
+    sfx.startMusic(this.world.id);
     this.raf = requestAnimationFrame((t) => this.frame(t));
   }
 
@@ -129,7 +182,18 @@ export class SpudGame {
 
   private hud(): void {
     const got = this.potatoes.filter((p) => p.taken).length;
-    this.hooks.onHud(this.hearts, this.kid.hearts, got, this.potatoes.length, this.kid.name);
+    this.hooks.onHud({
+      hearts: this.hearts,
+      max: this.maxHearts,
+      got,
+      total: this.potatoes.length,
+      name: this.kid.name,
+      score: this.score,
+      combo: this.combo,
+      world: this.world.name,
+      star: this.star,
+      trick: this.kid.trick,
+    });
   }
 
   private frame(now: number): void {
@@ -145,17 +209,27 @@ export class SpudGame {
     if (this.won || this.dead) return;
     this.time += dt;
     this.hurt = Math.max(0, this.hurt - dt);
-    this.coyote = this.onGround ? 0.1 : Math.max(0, this.coyote - dt);
-    if (input.jumpPressed) this.jumpBuf = 0.12;
+    this.star = Math.max(0, this.star - dt);
+    this.comboT = Math.max(0, this.comboT - dt);
+    this.shake = Math.max(0, this.shake - dt);
+    this.landSquash = Math.max(0, this.landSquash - dt);
+    this.dashT = Math.max(0, this.dashT - dt);
+    if (this.comboT <= 0) this.combo = 0;
+    this.coyote = this.onGround ? 0.12 : Math.max(0, this.coyote - dt);
+    if (input.jumpPressed) this.jumpBuf = 0.14;
     this.jumpBuf = Math.max(0, this.jumpBuf - dt);
     input.jumpPressed = false;
+    sfx.tickMusic(dt);
 
-    const accel = this.kid.speed * 8;
-    if (input.left && !input.right) {
-      this.vx = Math.max(this.vx - accel * dt, -this.kid.speed);
+    const speed = this.kid.speed * (this.star > 0 ? 1.28 : 1);
+    const accel = speed * 8;
+    if (this.dashT > 0) {
+      this.vx = this.facing * 520;
+    } else if (input.left && !input.right) {
+      this.vx = Math.max(this.vx - accel * dt, -speed);
       this.facing = -1;
     } else if (input.right && !input.left) {
-      this.vx = Math.min(this.vx + accel * dt, this.kid.speed);
+      this.vx = Math.min(this.vx + accel * dt, speed);
       this.facing = 1;
     } else {
       this.vx *= Math.max(0, 1 - dt * 10);
@@ -167,40 +241,108 @@ export class SpudGame {
       this.onGround = false;
       this.coyote = 0;
       this.jumpBuf = 0;
+      this.airUsed = false;
+      this.pound = false;
+      this.ride = null;
       sfx.jump();
-      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#f3d27a", 6);
+      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#f3d27a", 8);
       if (navigator.vibrate) navigator.vibrate(8);
+    } else if (this.jumpBuf > 0 && !this.onGround && !this.airUsed) {
+      this.airUsed = true;
+      this.jumpBuf = 0;
+      this.doTrick();
     }
 
-    // Phone players tap JUMP. Do not cut velocity on release or a tap
-    // never reaches the second-level platforms.
-    this.vy = Math.min(980, this.vy + 1480 * dt);
+    this.vy = Math.min(this.pound ? 1400 : 980, this.vy + (this.pound ? 2600 : 1480) * dt);
+    const beforeY = this.y;
+    this.stepMovers(dt);
     this.move(this.vx * dt, this.vy * dt);
+    if (this.onGround && this.vy === 0 && beforeY < this.y - 2) this.landSquash = 0.12;
 
     if (this.y > WORLD_H + 40) {
       this.damage();
-      this.x = Math.max(40, this.x - 180);
-      this.y = GROUND - this.kid.h - 8;
+      this.x = this.spawnX;
+      this.y = this.spawnY;
+      this.vx = 0;
       this.vy = 0;
     }
 
+    this.touchSprings();
+    this.touchPickups();
     this.touchPotatoes();
+    this.touchChecks();
     this.touchLeps(dt);
+    this.touchBoss(dt);
+    this.touchShots(dt);
     this.touchDoor();
     this.stepParticles(dt);
+    this.stepFloats(dt);
+    if (this.star > 0 && Math.floor(this.time * 20) % 2 === 0) {
+      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h * 0.5, "#ffe566", 1);
+    }
 
     const targetX = this.x - this.viewW * 0.34;
     const targetY = this.y - this.viewH * 0.55;
     this.camX += (targetX - this.camX) * Math.min(1, dt * 8);
     this.camY += (targetY - this.camY) * Math.min(1, dt * 6);
-    this.camX = clamp(this.camX, 0, WORLD_W - this.viewW);
+    this.camX = clamp(this.camX, 0, this.world.w - this.viewW);
     this.camY = clamp(this.camY, 0, WORLD_H - this.viewH);
+  }
+
+  private doTrick(): void {
+    sfx.trick();
+    this.shake = 0.12;
+    if (this.kid.id === "boots") {
+      this.vy = -this.kid.jump * 0.88;
+      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#7ec8ff", 12);
+      this.float(this.x, this.y, "DOUBLE!", "#7ec8ff");
+    } else if (this.kid.id === "ace") {
+      this.pound = true;
+      this.vy = 980;
+      this.float(this.x, this.y, "POUND!", "#f3d27a");
+    } else {
+      this.dashT = 0.2;
+      this.hurt = Math.max(this.hurt, 0.2);
+      this.vy = Math.min(this.vy, -80);
+      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h / 2, "#ff8ad4", 14);
+      this.float(this.x, this.y, "DASH!", "#ff8ad4");
+    }
+  }
+
+  private stepMovers(dt: number): void {
+    this.ride = null;
+    for (const m of this.world.movers) {
+      const before = m.axis === "x" ? m.x : m.y;
+      const next = before + m.speed * m.dir * dt;
+      if (next < m.min || next > m.max) m.dir *= -1;
+      if (m.axis === "x") m.x += m.speed * m.dir * dt;
+      else m.y += m.speed * m.dir * dt;
+      const feet = this.y + this.kid.h;
+      if (
+        this.vy >= 0 &&
+        feet >= m.y - 8 &&
+        feet <= m.y + 16 &&
+        this.x + this.kid.w > m.x &&
+        this.x < m.x + m.w
+      ) {
+        this.ride = m;
+        this.y = m.y - this.kid.h;
+        this.vy = 0;
+        this.onGround = true;
+        if (m.axis === "x") this.x += m.speed * m.dir * dt;
+        else this.y += m.speed * m.dir * dt;
+      }
+    }
+  }
+
+  private solids(): Platform[] {
+    return [...this.platforms, ...this.world.movers];
   }
 
   private move(dx: number, dy: number): void {
     this.x += dx;
-    this.x = clamp(this.x, 8, WORLD_W - this.kid.w - 8);
-    for (const p of this.platforms) {
+    this.x = clamp(this.x, 8, this.world.w - this.kid.w - 8);
+    for (const p of this.solids()) {
       if (p.oneWay) continue;
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, p.x, p.y, p.w, p.h)) continue;
       if (dx > 0) this.x = p.x - this.kid.w;
@@ -208,13 +350,13 @@ export class SpudGame {
     }
 
     const wasGround = this.onGround;
-    this.onGround = false;
+    if (!this.ride) this.onGround = false;
     this.y += dy;
-    for (const p of this.platforms) {
+    for (const p of this.solids()) {
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, p.x, p.y, p.w, p.h)) continue;
       if (p.oneWay) {
         const feet = this.y + this.kid.h;
-        if (dy >= 0 && feet - dy <= p.y + 8) {
+        if (dy >= 0 && feet - dy <= p.y + 10) {
           this.y = p.y - this.kid.h;
           this.vy = 0;
           this.onGround = true;
@@ -230,8 +372,63 @@ export class SpudGame {
         this.vy = 0;
       }
     }
-    if (this.onGround && !wasGround) {
-      this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#6b8f3a", 4);
+    if (this.onGround) {
+      this.airUsed = false;
+      if (this.pound) {
+        this.pound = false;
+        this.shake = 0.22;
+        this.landSquash = 0.18;
+        sfx.stomp();
+        this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#f3d27a", 16);
+        for (const e of this.leps) {
+          if (e.flat > 0) continue;
+          if (Math.abs(e.x - this.x) < 120 && Math.abs(e.y - this.y) < 90) {
+            e.flat = this.kid.stompTime;
+            this.addScore(150, e.x, e.y, "BOOM");
+          }
+        }
+      }
+      if (!wasGround) {
+        this.landSquash = 0.1;
+        this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#6b8f3a", 5);
+      }
+    }
+  }
+
+  private touchSprings(): void {
+    for (const s of this.world.springs) {
+      if (!overlap(this.x, this.y, this.kid.w, this.kid.h, s.x, s.y, s.w, s.h)) continue;
+      if (this.vy < -20) continue;
+      this.vy = -s.boost;
+      this.onGround = false;
+      this.airUsed = false;
+      sfx.spring();
+      this.shake = 0.1;
+      this.burst(s.x + 22, s.y, "#ff6b8a", 10);
+      this.float(s.x, s.y - 20, "BOING!", "#ff6b8a");
+    }
+  }
+
+  private touchPickups(): void {
+    for (const p of this.world.pickups) {
+      if (p.taken) continue;
+      if (!overlap(this.x, this.y, this.kid.w, this.kid.h, p.x, p.y, 30, 30)) continue;
+      p.taken = true;
+      if (p.kind === "star") {
+        this.star = 6.5;
+        sfx.star();
+        this.float(p.x, p.y, "STAR!", "#ffe566");
+      } else if (p.kind === "shamrock") {
+        this.maxHearts += 1;
+        this.hearts = Math.min(this.maxHearts, this.hearts + 1);
+        sfx.collect();
+        this.float(p.x, p.y, "+♥", "#8fd14f");
+      } else {
+        this.addScore(500, p.x, p.y, "GOLD");
+        sfx.gold();
+      }
+      this.burst(p.x + 14, p.y + 14, "#ffe566", 14);
+      this.hud();
     }
   }
 
@@ -240,10 +437,26 @@ export class SpudGame {
       if (p.taken) continue;
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, p.x, p.y, 28, 28)) continue;
       p.taken = true;
-      sfx.collect();
+      const pts = (p.gold ? 300 : 100) * (1 + this.combo);
+      this.addScore(pts, p.x, p.y, p.gold ? "GOLD SPUD" : "+");
+      if (p.gold) sfx.gold();
+      else sfx.collect();
       this.burst(p.x + 14, p.y + 14, "#f3d27a", 10);
       this.hud();
       if (navigator.vibrate) navigator.vibrate(12);
+    }
+  }
+
+  private touchChecks(): void {
+    for (const c of this.world.checks) {
+      if (c.got) continue;
+      if (!overlap(this.x, this.y, this.kid.w, this.kid.h, c.x, c.y, 28, 64)) continue;
+      c.got = true;
+      this.spawnX = c.x;
+      this.spawnY = GROUND - this.kid.h;
+      sfx.checkpoint();
+      this.float(c.x, c.y, "SAVE!", "#9fd4e8");
+      this.burst(c.x + 10, c.y + 20, "#9fd4e8", 12);
     }
   }
 
@@ -253,57 +466,158 @@ export class SpudGame {
         e.flat -= dt;
         continue;
       }
-      e.x += e.vx * dt;
-      if (e.x < e.left) {
-        e.x = e.left;
-        e.vx = Math.abs(e.vx);
-      } else if (e.x + e.w > e.right) {
-        e.x = e.right - e.w;
-        e.vx = -Math.abs(e.vx);
-      }
-      e.y += 400 * dt;
-      for (const p of this.platforms) {
-        if (p.kind === "ceiling") continue;
-        if (!overlap(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) continue;
-        if (e.y + e.h - p.y < 28) e.y = p.y - e.h;
+      if (e.fly) {
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        if (e.x < e.left || e.x + e.w > e.right) e.vx *= -1;
+        if (e.y < e.top || e.y + e.h > e.bot) e.vy *= -1;
+      } else {
+        e.x += e.vx * dt;
+        if (e.x < e.left) {
+          e.x = e.left;
+          e.vx = Math.abs(e.vx);
+        } else if (e.x + e.w > e.right) {
+          e.x = e.right - e.w;
+          e.vx = -Math.abs(e.vx);
+        }
+        e.y += 400 * dt;
+        for (const p of this.solids()) {
+          if (p.kind === "ceiling") continue;
+          if (!overlap(e.x, e.y, e.w, e.h, p.x, p.y, p.w, p.h)) continue;
+          if (e.y + e.h - p.y < 28) e.y = p.y - e.h;
+        }
       }
 
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, e.x, e.y, e.w, e.h)) continue;
       const feet = this.y + this.kid.h;
-      const stomped = this.vy > 60 && feet < e.y + 22;
-      if (stomped) {
+      const stomped = (this.vy > 50 || this.pound) && feet < e.y + 26;
+      if (stomped || this.star > 0 || this.dashT > 0) {
         e.flat = this.kid.stompTime;
-        this.vy = -this.kid.jump * this.kid.bounce * 0.72;
+        if (stomped) this.vy = -this.kid.jump * this.kid.bounce * 0.72;
         sfx.stomp();
-        this.burst(e.x + e.w / 2, e.y, "#8fd14f", 8);
+        this.addScore(200, e.x, e.y, "STOMP");
+        this.burst(e.x + e.w / 2, e.y, "#8fd14f", 10);
+        this.airUsed = false;
       } else {
         this.damage();
       }
     }
   }
 
+  private touchBoss(dt: number): void {
+    const b = this.world.boss;
+    if (!b || !b.alive) return;
+    b.hurt = Math.max(0, b.hurt - dt);
+    b.jumpT -= dt;
+    b.throwT -= dt;
+    b.x += b.vx * dt;
+    if (b.x < 3920) {
+      b.x = 3920;
+      b.vx = Math.abs(b.vx);
+    }
+    if (b.x + b.w > 4700) {
+      b.x = 4700 - b.w;
+      b.vx = -Math.abs(b.vx);
+    }
+    b.vy = Math.min(980, b.vy + 1600 * dt);
+    b.y += b.vy * dt;
+    if (b.y + b.h > GROUND) {
+      b.y = GROUND - b.h;
+      b.vy = 0;
+    }
+    if (b.jumpT <= 0) {
+      b.vy = -720;
+      b.jumpT = 2.1;
+    }
+    if (b.throwT <= 0) {
+      b.throwT = 1.6;
+      this.shots.push({
+        x: b.x + b.w / 2,
+        y: b.y + 30,
+        vx: this.x < b.x ? -240 : 240,
+        vy: -220,
+        life: 2.4,
+      });
+    }
+    if (!overlap(this.x, this.y, this.kid.w, this.kid.h, b.x, b.y, b.w, b.h)) return;
+    const feet = this.y + this.kid.h;
+    const stomped = (this.vy > 40 || this.pound) && feet < b.y + 36;
+    if ((stomped || this.star > 0) && b.hurt <= 0) {
+      b.hp -= 1;
+      b.hurt = 0.9;
+      this.vy = -this.kid.jump * 0.7;
+      this.shake = 0.28;
+      sfx.bossHit();
+      this.addScore(400, b.x, b.y, "KING HIT");
+      this.burst(b.x + b.w / 2, b.y, "#c41e3a", 18);
+      if (b.hp <= 0) {
+        b.alive = false;
+        this.world.lockedDoor = false;
+        this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+        this.addScore(2000, b.x, b.y, "BOSS");
+      }
+    } else if (b.hurt <= 0 && this.star <= 0) {
+      this.damage();
+    }
+  }
+
+  private touchShots(dt: number): void {
+    this.shots = this.shots.filter((s) => {
+      s.life -= dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.vy += 700 * dt;
+      if (s.y > GROUND - 12) {
+        s.y = GROUND - 12;
+        s.vy *= -0.45;
+      }
+      if (overlap(this.x, this.y, this.kid.w, this.kid.h, s.x, s.y, 16, 16) && this.star <= 0) {
+        this.damage();
+        return false;
+      }
+      return s.life > 0;
+    });
+  }
+
   private touchDoor(): void {
-    if (this.x + this.kid.w > this.doorX + 20 && this.y + this.kid.h >= GROUND - 4) {
+    if (this.world.lockedDoor) return;
+    if (this.x + this.kid.w > this.world.doorX + 20 && this.y + this.kid.h >= GROUND - 8) {
       this.won = true;
       sfx.win();
+      sfx.stopMusic();
       const got = this.potatoes.filter((p) => p.taken).length;
-      this.hooks.onWin(got, this.potatoes.length);
+      this.hooks.onClear(this.world.name, this.score, got, this.potatoes.length, this.world.id === 2);
     }
   }
 
   private damage(): void {
-    if (this.hurt > 0 || this.won || this.dead) return;
+    if (this.hurt > 0 || this.won || this.dead || this.star > 0) return;
     this.hearts -= 1;
     this.hurt = 1.35;
     this.vx = -this.facing * 180;
     this.vy = -240;
+    this.combo = 0;
+    this.shake = 0.2;
     sfx.hurt();
     this.hud();
     if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
     if (this.hearts <= 0) {
       this.dead = true;
+      sfx.stopMusic();
       this.hooks.onLose();
     }
+  }
+
+  private addScore(n: number, x: number, y: number, label: string): void {
+    this.combo += 1;
+    this.comboT = 1.8;
+    this.score += n;
+    this.float(x, y, `${label} ${n}`, "#fff6e4");
+    this.hud();
+  }
+
+  private float(x: number, y: number, text: string, color: string): void {
+    this.floats.push({ x, y, text, life: 0.9, color });
   }
 
   private burst(x: number, y: number, color: string, n: number): void {
@@ -311,12 +625,12 @@ export class SpudGame {
       this.particles.push({
         x,
         y,
-        vx: (Math.random() - 0.5) * 180,
-        vy: -40 - Math.random() * 140,
-        life: 0.35 + Math.random() * 0.25,
-        max: 0.6,
+        vx: (Math.random() - 0.5) * 220,
+        vy: -40 - Math.random() * 180,
+        life: 0.35 + Math.random() * 0.3,
+        max: 0.7,
         color,
-        size: 3 + Math.random() * 4,
+        size: 3 + Math.random() * 5,
       });
     }
   }
@@ -331,28 +645,54 @@ export class SpudGame {
     });
   }
 
+  private stepFloats(dt: number): void {
+    this.floats = this.floats.filter((f) => {
+      f.life -= dt;
+      f.y -= 36 * dt;
+      return f.life > 0;
+    });
+  }
+
   private draw(): void {
     const ctx = this.ctx;
     const dpr = this.canvas.width / Math.max(1, this.viewW);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, this.viewW, this.viewH);
-
-    const camX = this.camX;
-    const camY = this.camY;
-    this.paintSky(ctx);
-    this.paintHills(ctx, camX, camY);
-
+    const jx = this.shake > 0 ? (Math.random() - 0.5) * 10 : 0;
+    const jy = this.shake > 0 ? (Math.random() - 0.5) * 8 : 0;
     ctx.save();
-    ctx.translate(-camX, -camY);
+    ctx.translate(jx, jy);
+    this.paintSky(ctx);
+    this.paintParallax(ctx);
+    ctx.save();
+    ctx.translate(-this.camX, -this.camY);
     this.paintDecor(ctx);
     for (const p of this.platforms) this.paintPlatform(ctx, p);
+    for (const m of this.world.movers) this.paintPlatform(ctx, m);
+    for (const s of this.world.springs) this.paintSpring(ctx, s);
+    for (const c of this.world.checks) this.paintFlag(ctx, c);
     this.paintDoor(ctx);
+    for (const p of this.world.pickups) {
+      if (p.taken) continue;
+      this.paintPickup(ctx, p);
+    }
     for (const p of this.potatoes) {
       if (p.taken) continue;
       const bob = Math.sin(this.time * 5 + p.x * 0.02) * 5;
-      ctx.drawImage(this.art.potato, p.x, p.y + bob, 28, 28);
+      const size = p.gold ? 32 : 28;
+      ctx.save();
+      if (p.gold) ctx.filter = "sepia(1) saturate(3) hue-rotate(10deg)";
+      ctx.drawImage(this.art.potato, p.x, p.y + bob, size, size);
+      ctx.restore();
     }
     for (const e of this.leps) this.paintLep(ctx, e);
+    for (const s of this.shots) {
+      ctx.fillStyle = "#ffe566";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (this.world.boss?.alive) this.paintBoss(ctx, this.world.boss);
     this.paintKid(ctx);
     for (const p of this.particles) {
       ctx.globalAlpha = p.life / p.max;
@@ -362,33 +702,68 @@ export class SpudGame {
       ctx.fill();
       ctx.globalAlpha = 1;
     }
+    ctx.font = "700 16px Fredoka, sans-serif";
+    for (const f of this.floats) {
+      ctx.globalAlpha = Math.max(0, f.life);
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    if (this.combo >= 3) {
+      ctx.fillStyle = "#ffe566";
+      ctx.font = "800 28px Fredoka, sans-serif";
+      ctx.fillText(`COMBO x${this.combo}`, 16, this.viewH - 18);
+    }
     ctx.restore();
   }
 
   private paintSky(ctx: CanvasRenderingContext2D): void {
     const g = ctx.createLinearGradient(0, 0, 0, this.viewH);
-    g.addColorStop(0, "#8fd4ea");
-    g.addColorStop(0.55, "#bfe6c8");
-    g.addColorStop(1, "#6aa84f");
+    if (this.world.theme === "mine") {
+      g.addColorStop(0, "#1b1630");
+      g.addColorStop(0.55, "#3a2458");
+      g.addColorStop(1, "#1f3d2a");
+    } else if (this.world.theme === "keep") {
+      g.addColorStop(0, "#5b2d8a");
+      g.addColorStop(0.4, "#e070b0");
+      g.addColorStop(0.7, "#f7c16a");
+      g.addColorStop(1, "#6aa84f");
+    } else {
+      g.addColorStop(0, "#8fd4ea");
+      g.addColorStop(0.55, "#bfe6c8");
+      g.addColorStop(1, "#6aa84f");
+    }
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, this.viewW, this.viewH);
   }
 
-  private paintHills(ctx: CanvasRenderingContext2D, camX: number, camY: number): void {
-    ctx.fillStyle = "#7eb6d4";
-    for (let i = 0; i < 8; i++) {
-      const x = ((i * 220 - camX * 0.15) % (this.viewW + 240)) - 80;
-      const y = 70 - camY * 0.04;
-      ctx.beginPath();
-      ctx.ellipse(x, y, 46, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
+  private paintParallax(ctx: CanvasRenderingContext2D): void {
+    if (this.world.theme === "keep") {
+      for (let i = 0; i < 6; i++) {
+        const x = ((i * 160 - this.camX * 0.12) % (this.viewW + 180)) - 40;
+        ctx.fillStyle = ["#ff5b7a", "#ffd15c", "#62e08a", "#5cc8ff", "#b57bff"][i % 5];
+        ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        ctx.ellipse(x, 90 + (i % 3) * 16, 70, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    } else {
+      ctx.fillStyle = this.world.theme === "mine" ? "#6d5b9a" : "#7eb6d4";
+      for (let i = 0; i < 8; i++) {
+        const x = ((i * 220 - this.camX * 0.15) % (this.viewW + 240)) - 80;
+        ctx.beginPath();
+        ctx.ellipse(x, 70 - this.camY * 0.04, 46, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
-    ctx.fillStyle = "#4f8f46";
+    ctx.fillStyle = this.world.theme === "mine" ? "#24351f" : "#4f8f46";
     ctx.beginPath();
     ctx.moveTo(0, this.viewH);
     for (let i = 0; i <= 12; i++) {
       const x = i * (this.viewW / 12);
-      const y = this.viewH * 0.62 + Math.sin(i * 0.9 + camX * 0.001) * 28;
+      const y = this.viewH * 0.62 + Math.sin(i * 0.9 + this.camX * 0.001) * 28;
       ctx.lineTo(x, y);
     }
     ctx.lineTo(this.viewW, this.viewH);
@@ -396,16 +771,27 @@ export class SpudGame {
   }
 
   private paintDecor(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = "#3d7a36";
-    for (let x = 0; x < WORLD_W; x += 28) {
+    ctx.fillStyle = this.world.theme === "mine" ? "#2f6a4a" : "#3d7a36";
+    for (let x = 0; x < this.world.w; x += 28) {
       const h = 10 + ((x * 13) % 14);
       ctx.fillRect(x, GROUND - h, 6, h);
     }
-    ctx.fillStyle = "#c41e3a";
-    ctx.fillRect(this.doorX - 90, GROUND - 168, 210, 168);
-    ctx.fillStyle = "#9fd4e8";
-    ctx.fillRect(this.doorX - 160, GROUND - 150, 70, 150);
-    ctx.fillRect(this.doorX + 120, GROUND - 150, 80, 150);
+    if (this.world.theme === "keep") {
+      ctx.fillStyle = "#5b1d2a";
+      ctx.fillRect(this.world.doorX - 140, GROUND - 220, 320, 220);
+      ctx.fillStyle = "#3b1220";
+      ctx.fillRect(this.world.doorX - 40, GROUND - 280, 40, 70);
+      ctx.fillRect(this.world.doorX + 90, GROUND - 300, 40, 90);
+    } else if (this.world.theme === "mine") {
+      ctx.fillStyle = "#2a1d16";
+      ctx.fillRect(this.world.doorX - 80, GROUND - 160, 190, 160);
+    } else {
+      ctx.fillStyle = "#c41e3a";
+      ctx.fillRect(this.world.doorX - 90, GROUND - 168, 210, 168);
+      ctx.fillStyle = "#9fd4e8";
+      ctx.fillRect(this.world.doorX - 160, GROUND - 150, 70, 150);
+      ctx.fillRect(this.world.doorX + 120, GROUND - 150, 80, 150);
+    }
   }
 
   private paintPlatform(ctx: CanvasRenderingContext2D, p: Platform): void {
@@ -419,32 +805,81 @@ export class SpudGame {
       return;
     }
     if (p.kind === "ceiling") {
-      ctx.fillStyle = "#6b4a2a";
+      ctx.fillStyle = "#4a3424";
       ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = "#8a6236";
+      ctx.fillStyle = "#6a4a30";
       for (let i = 0; i < p.w; i += 24) ctx.fillRect(p.x + i, p.y, 12, p.h);
       return;
     }
-    ctx.fillStyle = p.kind === "stone" ? "#8d8678" : "#c48a3a";
+    const fill =
+      p.kind === "stone" ? "#8d8678" : p.kind === "brick" ? "#c45b4a" : p.kind === "crystal" ? "#7b6cff" : "#c48a3a";
+    const hi =
+      p.kind === "stone" ? "#a39c8e" : p.kind === "brick" ? "#e08a74" : p.kind === "crystal" ? "#c3b7ff" : "#e0b25a";
+    ctx.fillStyle = fill;
     roundRect(ctx, p.x, p.y, p.w, p.h, 6);
     ctx.fill();
-    ctx.fillStyle = p.kind === "stone" ? "#a39c8e" : "#e0b25a";
+    ctx.fillStyle = hi;
     ctx.fillRect(p.x + 4, p.y + 3, p.w - 8, 5);
   }
 
-  private paintDoor(ctx: CanvasRenderingContext2D): void {
-    const x = this.doorX;
-    const y = GROUND - 148;
+  private paintSpring(ctx: CanvasRenderingContext2D, s: { x: number; y: number; w: number; h: number }): void {
+    const bounce = 1 + Math.sin(this.time * 10) * 0.08;
+    ctx.fillStyle = "#222";
+    ctx.fillRect(s.x + 8, s.y + 8, s.w - 16, s.h);
+    ctx.fillStyle = "#ff4d6d";
+    roundRect(ctx, s.x, s.y - 4 * bounce, s.w, 14, 6);
+    ctx.fill();
+  }
+
+  private paintFlag(ctx: CanvasRenderingContext2D, c: { x: number; y: number; got: boolean }): void {
     ctx.fillStyle = "#f4f0e6";
+    ctx.fillRect(c.x + 10, c.y, 6, 70);
+    ctx.fillStyle = c.got ? "#8fd14f" : "#c41e3a";
+    ctx.beginPath();
+    ctx.moveTo(c.x + 16, c.y + 4);
+    ctx.lineTo(c.x + 48, c.y + 16);
+    ctx.lineTo(c.x + 16, c.y + 28);
+    ctx.fill();
+  }
+
+  private paintPickup(ctx: CanvasRenderingContext2D, p: { x: number; y: number; kind: string }): void {
+    const bob = Math.sin(this.time * 6 + p.x) * 4;
+    if (p.kind === "star") {
+      ctx.fillStyle = "#ffe566";
+      star(ctx, p.x + 14, p.y + 14 + bob, 13, 6);
+      ctx.fill();
+    } else if (p.kind === "shamrock") {
+      ctx.fillStyle = "#3dcc6a";
+      for (const [ox, oy] of [
+        [0, -6],
+        [-6, 2],
+        [6, 2],
+      ]) {
+        ctx.beginPath();
+        ctx.arc(p.x + 14 + ox, p.y + 14 + oy + bob, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = "#ffd15c";
+      ctx.beginPath();
+      ctx.arc(p.x + 14, p.y + 14 + bob, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  private paintDoor(ctx: CanvasRenderingContext2D): void {
+    const x = this.world.doorX;
+    const y = GROUND - 148;
+    ctx.fillStyle = this.world.lockedDoor ? "#4a4a4a" : "#f4f0e6";
     ctx.fillRect(x - 10, y - 10, 96, 158);
-    ctx.fillStyle = "#c41e3a";
+    ctx.fillStyle = this.world.lockedDoor ? "#2b2b2b" : "#c41e3a";
     ctx.fillRect(x, y, 76, 148);
     ctx.fillStyle = "#9a1730";
     ctx.fillRect(x + 8, y + 14, 24, 40);
     ctx.fillRect(x + 44, y + 14, 24, 40);
     ctx.fillRect(x + 8, y + 66, 24, 40);
     ctx.fillRect(x + 44, y + 66, 24, 40);
-    ctx.fillStyle = "#2b2b2b";
+    ctx.fillStyle = this.world.lockedDoor ? "#ffe566" : "#2b2b2b";
     ctx.beginPath();
     ctx.arc(x + 64, y + 80, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -462,14 +897,30 @@ export class SpudGame {
     ctx.restore();
   }
 
+  private paintBoss(ctx: CanvasRenderingContext2D, b: Boss): void {
+    if (b.hurt > 0 && Math.floor(this.time * 20) % 2 === 0) return;
+    ctx.save();
+    ctx.translate(b.x + b.w / 2, b.y + b.h);
+    ctx.scale(b.vx >= 0 ? 1.35 : -1.35, 1.35);
+    ctx.drawImage(this.art.lep, -b.w / 2 / 1.35, -b.h / 1.35, b.w / 1.35, b.h / 1.35);
+    ctx.restore();
+    ctx.fillStyle = "#1b2418";
+    ctx.fillRect(b.x, b.y - 16, b.w, 8);
+    ctx.fillStyle = "#c41e3a";
+    ctx.fillRect(b.x, b.y - 16, (b.w * b.hp) / b.max, 8);
+  }
+
   private paintKid(ctx: CanvasRenderingContext2D): void {
-    if (this.hurt > 0 && Math.floor(this.time * 16) % 2 === 0) return;
+    if (this.hurt > 0 && this.star <= 0 && Math.floor(this.time * 16) % 2 === 0) return;
     const img = kidSprite(this.art, this.kid.id);
-    const bob = this.onGround && Math.abs(this.vx) > 20 ? Math.sin(this.time * 18) * 2 : 0;
+    const run = this.onGround && Math.abs(this.vx) > 20 ? Math.sin(this.time * 18) : 0;
+    const squash = this.landSquash > 0 ? 0.82 : this.vy < -80 ? 1.08 : 1;
+    const stretch = this.landSquash > 0 ? 1.12 : this.vy < -80 ? 0.92 : 1;
     ctx.save();
     ctx.translate(this.x + this.kid.w / 2, this.y + this.kid.h);
-    ctx.scale(this.facing, 1);
-    ctx.drawImage(img, -this.kid.w / 2 - 4, -this.kid.h - 6 + bob, this.kid.w + 8, this.kid.h + 8);
+    ctx.scale(this.facing * stretch, squash);
+    if (this.star > 0) ctx.filter = "saturate(1.6) hue-rotate(25deg)";
+    ctx.drawImage(img, -this.kid.w / 2 - 4, -this.kid.h - 6 + run * 2, this.kid.w + 8, this.kid.h + 8);
     ctx.restore();
   }
 }
@@ -505,5 +956,18 @@ function roundRect(
   ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function star(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, n: number): void {
+  ctx.beginPath();
+  for (let i = 0; i < n * 2; i++) {
+    const rad = i % 2 === 0 ? r : r * 0.45;
+    const a = (i * Math.PI) / n - Math.PI / 2;
+    const px = x + Math.cos(a) * rad;
+    const py = y + Math.sin(a) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
   ctx.closePath();
 }

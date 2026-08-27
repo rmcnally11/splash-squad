@@ -1,6 +1,6 @@
 # Spud Squad
 
-A phone-first Mario-style platformer. Play as one of the three kids — **Boots**, **Ace**, or **Pip** — jump for potatoes, stomp or dodge the leprechauns, and race home to the red door.
+A phone-first Mario-style platformer starring three kids. Jump, stomp, dash, and bounce the leprechauns across **three worlds**, then knock the King down at Rainbow Keep.
 
 ## Play
 
@@ -11,17 +11,23 @@ npm run dev
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-On a phone: hold **◀ / ▶** with your left thumb and tap **JUMP** with your right. On a keyboard: arrows or WASD, space to jump.
+On a phone: hold **◀ / ▶** with your left thumb and tap **JUMP** with your right. Tap JUMP again in the air for that kid’s trick. Keyboard: arrows or WASD, space to jump.
 
 ## The kids
 
-| Kid | Who | How they play |
+| Kid | Trick | How they play |
 | --- | --- | --- |
-| **Boots** | The girl in the dinosaur dress and cowboy boots | Highest jump. Bounce extra high off a leprechaun hat. |
-| **Ace** | The taller boy | Extra heart. A stomp keeps a leprechaun flat longer. |
-| **Pip** | The toddler | Fastest and smallest. Fits under the low wooden ceiling. |
+| **Boots** | Air jump | Second leap in the air. Highest bounce off a hat. |
+| **Ace** | Ground pound | Air JUMP while falling slams the ground and flattens nearby hats. Extra heart. |
+| **Pip** | Dash | Air JUMP rockets sideways. Fastest. Fits under low beams. |
 
-Grab potatoes along the field, hop the pits, and touch the red door to finish. All three hearts gone is a catch — pick the same kid or another and run it again.
+## Worlds
+
+1. **Potato Patch** — sunny fields, springs, a moving ledge, flying hats.
+2. **Lucky Mine** — glow crystals, low ceilings, more flyers.
+3. **Rainbow Keep** — castle climb. Stomp the King three times to unlock the door.
+
+Grab potatoes (gold ones score more), shamrocks for an extra heart, and stars for a short invincible rush. Flags save your spot. All hearts gone is a catch — retry the same world or switch kids.
 
 ## Build
 
