@@ -168,6 +168,11 @@ export class SpudGame {
       this.weapon = 0;
       this.superCharges = 0;
     }
+    if (new URLSearchParams(location.search).has("kit")) {
+      this.ammo = 20;
+      this.weapon = 4;
+      this.superCharges = 1;
+    }
     this.throwCool = 0;
     this.throwPose = 0;
     this.nukeFlash = 0;
