@@ -5,6 +5,8 @@ export type InputState = {
   jumpPressed: boolean;
   throw: boolean;
   throwPressed: boolean;
+  super: boolean;
+  superPressed: boolean;
 };
 
 export function createInput(): InputState {
@@ -15,19 +17,22 @@ export function createInput(): InputState {
     jumpPressed: false,
     throw: false,
     throwPressed: false,
+    super: false,
+    superPressed: false,
   };
 }
 
 export function bindControls(input: InputState): void {
-  const hold = (el: HTMLElement | null, key: "left" | "right" | "jump" | "throw"): void => {
+  const hold = (el: HTMLElement | null, key: "left" | "right" | "jump" | "throw" | "super"): void => {
     if (!el) return;
     const set = (on: boolean, ev: Event): void => {
       ev.preventDefault();
       input[key] = on;
       el.classList.toggle("on", on);
-      if ((key === "jump" || key === "throw") && on) {
+      if ((key === "jump" || key === "throw" || key === "super") && on) {
         if (key === "jump") input.jumpPressed = true;
         if (key === "throw") input.throwPressed = true;
+        if (key === "super") input.superPressed = true;
       }
     };
     el.addEventListener("pointerdown", (ev) => {
@@ -53,6 +58,7 @@ export function bindControls(input: InputState): void {
       ev.preventDefault();
       if (key === "jump") input.jumpPressed = true;
       if (key === "throw") input.throwPressed = true;
+      if (key === "super") input.superPressed = true;
     });
   };
 
@@ -60,8 +66,9 @@ export function bindControls(input: InputState): void {
   hold(document.getElementById("btn-right"), "right");
   hold(document.getElementById("btn-jump"), "jump");
   hold(document.getElementById("btn-throw"), "throw");
+  hold(document.getElementById("btn-super"), "super");
 
-  const keyMap: Record<string, "left" | "right" | "jump" | "throw"> = {
+  const keyMap: Record<string, "left" | "right" | "jump" | "throw" | "super"> = {
     ArrowLeft: "left",
     ArrowRight: "right",
     a: "left",
@@ -78,6 +85,9 @@ export function bindControls(input: InputState): void {
     F: "throw",
     k: "throw",
     K: "throw",
+    g: "super",
+    G: "super",
+    Shift: "super",
   };
 
   const down = (ev: KeyboardEvent): void => {
@@ -86,6 +96,7 @@ export function bindControls(input: InputState): void {
     ev.preventDefault();
     if (k === "jump" && !input.jump) input.jumpPressed = true;
     if (k === "throw" && !input.throw) input.throwPressed = true;
+    if (k === "super" && !input.super) input.superPressed = true;
     input[k] = true;
   };
   const up = (ev: KeyboardEvent): void => {
@@ -110,9 +121,11 @@ export function releaseAll(input: InputState): void {
   input.right = false;
   input.jump = false;
   input.throw = false;
+  input.super = false;
   input.jumpPressed = false;
   input.throwPressed = false;
-  for (const id of ["btn-left", "btn-right", "btn-jump", "btn-throw"]) {
+  input.superPressed = false;
+  for (const id of ["btn-left", "btn-right", "btn-jump", "btn-throw", "btn-super"]) {
     document.getElementById(id)?.classList.remove("on");
   }
 }

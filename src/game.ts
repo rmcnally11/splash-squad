@@ -39,13 +39,14 @@ type SpudBall = {
   hot: boolean;
 };
 type Boom = { x: number; y: number; life: number; max: number; big: boolean };
-type WeaponId = 0 | 1 | 2 | 3;
+type WeaponId = 0 | 1 | 2 | 3 | 4;
 
 const WEAPONS = [
-  { name: "SPUD", cool: 0.26, shots: 1, hot: false },
-  { name: "RAPID", cool: 0.11, shots: 1, hot: false },
-  { name: "SPREAD", cool: 0.22, shots: 3, hot: false },
-  { name: "HOT SPUD", cool: 0.3, shots: 1, hot: true },
+  { name: "SPUD", cool: 0.26, shots: 1, hot: false, gun: false },
+  { name: "RAPID", cool: 0.11, shots: 1, hot: false, gun: false },
+  { name: "SPREAD", cool: 0.22, shots: 3, hot: false, gun: false },
+  { name: "HOT SPUD", cool: 0.3, shots: 1, hot: true, gun: false },
+  { name: "GUN", cool: 0.07, shots: 1, hot: false, gun: true },
 ] as const;
 
 export type HudInfo = {
@@ -61,6 +62,7 @@ export type HudInfo = {
   trick: string;
   ammo: number;
   weapon: string;
+  superCharges: number;
 };
 
 export type GameHooks = {
@@ -84,10 +86,12 @@ export class SpudGame {
   private shots: Shot[] = [];
   private spuds: SpudBall[] = [];
   private booms: Boom[] = [];
-  private ammo = 3;
+  private ammo = 5;
   private weapon: WeaponId = 0;
   private throwCool = 0;
   private throwPose = 0;
+  private superCharges = 0;
+  private nukeFlash = 0;
   private x = 80;
   private y = GROUND - 68;
   private vx = 0;
@@ -160,11 +164,13 @@ export class SpudGame {
     this.spuds = [];
     this.booms = [];
     if (!keepScore) {
-      this.ammo = 3;
+      this.ammo = 5;
       this.weapon = 0;
+      this.superCharges = 0;
     }
     this.throwCool = 0;
     this.throwPose = 0;
+    this.nukeFlash = 0;
     this.x = 90;
     this.y = GROUND - this.kid.h;
     this.vx = 0;
@@ -249,6 +255,7 @@ export class SpudGame {
       trick: this.kid.trick,
       ammo: this.ammo,
       weapon: WEAPONS[this.weapon].name,
+      superCharges: this.superCharges,
     });
   }
 
@@ -272,6 +279,7 @@ export class SpudGame {
     this.dashT = Math.max(0, this.dashT - dt);
     this.throwCool = Math.max(0, this.throwCool - dt);
     this.throwPose = Math.max(0, this.throwPose - dt);
+    this.nukeFlash = Math.max(0, this.nukeFlash - dt);
     if (this.comboT <= 0) this.combo = 0;
     this.coyote = this.onGround ? 0.12 : Math.max(0, this.coyote - dt);
     if (input.jumpPressed) this.jumpBuf = 0.14;
@@ -312,9 +320,15 @@ export class SpudGame {
       this.doTrick();
     }
 
+    if (input.superPressed) {
+      this.tryNuke();
+      input.superPressed = false;
+    }
     if (input.throwPressed) {
       this.tryThrow();
       input.throwPressed = false;
+    } else if (WEAPONS[this.weapon].gun && input.throw) {
+      this.tryThrow();
     }
 
     this.vy = Math.min(this.pound ? 1400 : 980, this.vy + (this.pound ? 2600 : 1480) * dt);
@@ -390,22 +404,76 @@ export class SpudGame {
     const originY = this.y + this.kid.h * 0.38;
     const angles = gun.shots === 3 ? [-0.28, 0, 0.28] : [0];
     for (const tilt of angles) {
-      const speed = gun.hot ? 580 : 520;
+      const speed = gun.gun ? 720 : gun.hot ? 580 : 520;
       this.spuds.push({
         x: originX,
         y: originY,
         vx: Math.cos(tilt) * this.facing * speed + this.vx * 0.25,
-        vy: -240 + Math.sin(tilt) * 220,
-        life: gun.hot ? 2.1 : 1.7,
+        vy: gun.gun ? -40 + Math.sin(tilt) * 80 : -240 + Math.sin(tilt) * 220,
+        life: gun.gun ? 1.15 : gun.hot ? 2.1 : 1.7,
         spin: 0,
         hot: gun.hot,
       });
     }
-    sfx.throw();
-    this.shake = gun.hot ? 0.16 : 0.1;
+    if (gun.gun) sfx.gun();
+    else sfx.throw();
+    this.shake = gun.hot ? 0.16 : gun.gun ? 0.06 : 0.1;
     this.burst(this.x + this.facing * 24, this.y + 20, gun.hot ? "#ff6b2a" : "#f3d27a", gun.hot ? 10 : 6);
     this.hud();
-    if (navigator.vibrate) navigator.vibrate(10);
+    if (navigator.vibrate) navigator.vibrate(gun.gun ? 4 : 10);
+  }
+
+  private tryNuke(): void {
+    if (this.superCharges <= 0 || this.won || this.dead) return;
+    this.superCharges -= 1;
+    this.nukeFlash = 0.5;
+    this.shake = 0.55;
+    sfx.nuke();
+    this.float(this.x, this.y - 30, "SUPER SPUD!", "#ffe566");
+    const left = this.camX - 20;
+    const right = this.camX + this.viewW + 20;
+    const top = this.camY - 20;
+    const bot = this.camY + this.viewH + 20;
+    for (const e of this.leps) {
+      if (e.flat > 0) continue;
+      if (e.x + e.w < left || e.x > right || e.y + e.h < top || e.y > bot) continue;
+      this.hitEnemy(e, 99, "NUKE", true);
+    }
+    const b = this.world.boss;
+    if (b?.alive) {
+      b.hp -= 3;
+      b.hurt = 0.8;
+      sfx.bossHit();
+      this.addScore(600, b.x, b.y, "KING NUKE");
+      this.explode(b.x + b.w / 2, b.y + b.h / 2, true);
+      if (b.hp <= 0) {
+        b.alive = false;
+        this.world.lockedDoor = false;
+        this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+        this.addScore(2000, b.x, b.y, "BOSS");
+      }
+    }
+    this.burst(this.x + this.kid.w / 2, this.y + this.kid.h / 2, "#ffe566", 36);
+    this.burst(this.x + this.kid.w / 2, this.y + this.kid.h / 2, "#ff6b2a", 24);
+    this.hud();
+    if (navigator.vibrate) navigator.vibrate([20, 30, 40]);
+  }
+
+  private hitEnemy(e: Lep, dmg: number, label: string, force = false): boolean {
+    if (e.flat > 0) return false;
+    if (!force && e.hurt > 0) return false;
+    e.hp -= dmg;
+    e.hurt = 0.32;
+    if (e.hp <= 0) {
+      e.flat = this.kid.stompTime + 0.35;
+      this.addScore(180 + e.max * 90, e.x, e.y, label);
+      this.burst(e.x + e.w / 2, e.y + e.h / 2, "#8fd14f", 14);
+      return true;
+    }
+    this.float(e.x, e.y - 8, `${e.hp} LEFT`, "#ffe566");
+    this.addScore(50, e.x, e.y, "HIT");
+    this.burst(e.x + e.w / 2, e.y + e.h / 2, "#fff4c2", 8);
+    return true;
   }
 
   private stepSpuds(dt: number): void {
@@ -428,8 +496,7 @@ export class SpudGame {
       for (const e of this.leps) {
         if (e.flat > 0) continue;
         if (!overlap(s.x - 10, s.y - 10, 20, 20, e.x, e.y, e.w, e.h)) continue;
-        e.flat = this.kid.stompTime + 0.4;
-        this.addScore(250, e.x, e.y, "SPUD");
+        this.hitEnemy(e, s.hot ? 2 : 1, s.hot ? "HOT" : "SPUD");
         this.explode(e.x + e.w / 2, e.y + e.h / 2, s.hot);
         return false;
       }
@@ -469,8 +536,7 @@ export class SpudGame {
       const dx = e.x + e.w / 2 - x;
       const dy = e.y + e.h / 2 - y;
       if (dx * dx + dy * dy > radius * radius) continue;
-      e.flat = this.kid.stompTime + 0.5;
-      this.addScore(180, e.x, e.y, "BLAST");
+      this.hitEnemy(e, 1, "BLAST", true);
     }
   }
 
@@ -547,9 +613,8 @@ export class SpudGame {
         this.burst(this.x + this.kid.w / 2, this.y + this.kid.h, "#f3d27a", 16);
         for (const e of this.leps) {
           if (e.flat > 0) continue;
-          if (Math.abs(e.x - this.x) < 120 && Math.abs(e.y - this.y) < 90) {
-            e.flat = this.kid.stompTime;
-            this.addScore(150, e.x, e.y, "BOOM");
+          if (Math.abs(e.x - this.x) < 140 && Math.abs(e.y - this.y) < 110) {
+            this.hitEnemy(e, 2, "POUND", true);
           }
         }
       }
@@ -589,10 +654,19 @@ export class SpudGame {
         sfx.collect();
         this.float(p.x, p.y, "+♥", "#8fd14f");
       } else if (p.kind === "blaster") {
-        this.weapon = Math.min(3, this.weapon + 1) as WeaponId;
-        this.ammo += 3;
+        this.weapon = (this.weapon === 4 ? 3 : Math.min(3, this.weapon + 1)) as WeaponId;
+        this.ammo += 4;
         sfx.gold();
         this.float(p.x, p.y, WEAPONS[this.weapon].name, "#ff9a1f");
+      } else if (p.kind === "gun") {
+        this.weapon = 4;
+        this.ammo += 10;
+        sfx.gold();
+        this.float(p.x, p.y, "POTATO GUN!", "#ff9a1f");
+      } else if (p.kind === "super") {
+        this.superCharges = Math.min(3, this.superCharges + 1);
+        sfx.star();
+        this.float(p.x, p.y, "SUPER SPUD", "#ffe566");
       } else {
         this.addScore(500, p.x, p.y, "GOLD");
         sfx.gold();
@@ -633,6 +707,7 @@ export class SpudGame {
 
   private touchLeps(dt: number): void {
     for (const e of this.leps) {
+      e.hurt = Math.max(0, e.hurt - dt);
       if (e.flat > 0) {
         e.flat -= dt;
         continue;
@@ -661,14 +736,14 @@ export class SpudGame {
 
       if (!overlap(this.x, this.y, this.kid.w, this.kid.h, e.x, e.y, e.w, e.h)) continue;
       const feet = this.y + this.kid.h;
-      const stomped = (this.vy > 50 || this.pound) && feet < e.y + 26;
+      const stomped = (this.vy > 50 || this.pound) && feet < e.y + e.h * 0.48;
       if (stomped || this.star > 0 || this.dashT > 0) {
-        e.flat = this.kid.stompTime;
-        if (stomped) this.vy = -this.kid.jump * this.kid.bounce * 0.72;
-        sfx.stomp();
-        this.addScore(200, e.x, e.y, "STOMP");
-        this.burst(e.x + e.w / 2, e.y, "#8fd14f", 10);
-        this.airUsed = false;
+        const dmg = this.pound || this.star > 0 ? 2 : 1;
+        if (this.hitEnemy(e, dmg, stomped ? "STOMP" : "SMASH")) {
+          if (stomped) this.vy = -this.kid.jump * this.kid.bounce * 0.72;
+          sfx.stomp();
+          this.airUsed = false;
+        }
       } else {
         this.damage();
       }
@@ -682,12 +757,12 @@ export class SpudGame {
     b.jumpT -= dt;
     b.throwT -= dt;
     b.x += b.vx * dt;
-    if (b.x < 3920) {
-      b.x = 3920;
+    if (b.x < b.left) {
+      b.x = b.left;
       b.vx = Math.abs(b.vx);
     }
-    if (b.x + b.w > 4700) {
-      b.x = 4700 - b.w;
+    if (b.x + b.w > b.right) {
+      b.x = b.right - b.w;
       b.vx = -Math.abs(b.vx);
     }
     b.vy = Math.min(980, b.vy + 1600 * dt);
@@ -712,7 +787,7 @@ export class SpudGame {
     }
     if (!overlap(this.x, this.y, this.kid.w, this.kid.h, b.x, b.y, b.w, b.h)) return;
     const feet = this.y + this.kid.h;
-    const stomped = (this.vy > 40 || this.pound) && feet < b.y + 36;
+    const stomped = (this.vy > 40 || this.pound) && feet < b.y + b.h * 0.42;
     if ((stomped || this.star > 0) && b.hurt <= 0) {
       b.hp -= 1;
       b.hurt = 0.9;
@@ -757,7 +832,13 @@ export class SpudGame {
       sfx.win();
       sfx.stopMusic();
       const got = this.potatoes.filter((p) => p.taken).length;
-      this.hooks.onClear(this.world.name, this.score, got, this.potatoes.length, this.world.id === 2);
+      this.hooks.onClear(
+        this.world.name,
+        this.score,
+        got,
+        this.potatoes.length,
+        this.world.id === this.worlds.length - 1,
+      );
     }
   }
 
@@ -895,6 +976,10 @@ export class SpudGame {
       ctx.fillText(`COMBO x${this.combo}`, 16, this.viewH - 18);
     }
     this.paintScan(ctx);
+    if (this.nukeFlash > 0) {
+      ctx.fillStyle = `rgba(255, 244, 160, ${Math.min(0.72, this.nukeFlash * 1.6)})`;
+      ctx.fillRect(0, 0, this.viewW, this.viewH);
+    }
     ctx.restore();
   }
 
@@ -926,6 +1011,16 @@ export class SpudGame {
       g.addColorStop(0.35, "#d23a5a");
       g.addColorStop(0.65, "#f0a030");
       g.addColorStop(1, "#4a6a22");
+    } else if (this.world.theme === "bog") {
+      g.addColorStop(0, "#1c3a32");
+      g.addColorStop(0.4, "#2f6a4a");
+      g.addColorStop(0.75, "#6a7a28");
+      g.addColorStop(1, "#2a3a16");
+    } else if (this.world.theme === "vault") {
+      g.addColorStop(0, "#1a1208");
+      g.addColorStop(0.4, "#6a4a12");
+      g.addColorStop(0.7, "#c49a28");
+      g.addColorStop(1, "#3a2a10");
     } else {
       g.addColorStop(0, "#5ec4f0");
       g.addColorStop(0.4, "#f3d27a");
@@ -955,7 +1050,14 @@ export class SpudGame {
         ctx.globalAlpha = 1;
       }
     } else {
-      ctx.fillStyle = this.world.theme === "mine" ? "#6d5b9a" : "#7eb6d4";
+      ctx.fillStyle =
+        this.world.theme === "mine"
+          ? "#6d5b9a"
+          : this.world.theme === "vault"
+            ? "#c4a24a"
+            : this.world.theme === "bog"
+              ? "#4a6a48"
+              : "#7eb6d4";
       for (let i = 0; i < 8; i++) {
         const x = ((i * 220 - this.camX * 0.15) % (this.viewW + 240)) - 80;
         ctx.beginPath();
@@ -963,7 +1065,14 @@ export class SpudGame {
         ctx.fill();
       }
     }
-    ctx.fillStyle = this.world.theme === "mine" ? "#24351f" : "#4f8f46";
+    ctx.fillStyle =
+      this.world.theme === "mine"
+        ? "#24351f"
+        : this.world.theme === "vault"
+          ? "#3a2e12"
+          : this.world.theme === "bog"
+            ? "#2a4a28"
+            : "#4f8f46";
     ctx.beginPath();
     ctx.moveTo(0, this.viewH);
     for (let i = 0; i <= 12; i++) {
@@ -1093,6 +1202,28 @@ export class SpudGame {
       ctx.beginPath();
       ctx.arc(p.x + 28, p.y + 16 + bob, 7, 0, Math.PI * 2);
       ctx.fill();
+    } else if (p.kind === "gun") {
+      ctx.fillStyle = "#6b3f1c";
+      ctx.strokeStyle = "#14110d";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      roundRect(ctx, p.x + 2, p.y + 12 + bob, 28, 10, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#f3d27a";
+      ctx.fillRect(p.x + 26, p.y + 8 + bob, 10, 8);
+      ctx.beginPath();
+      ctx.arc(p.x + 8, p.y + 22 + bob, 6, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (p.kind === "super") {
+      ctx.fillStyle = "#ffe566";
+      ctx.strokeStyle = "#c41e3a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(p.x + 14, p.y + 14 + bob, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      paintSpud(ctx, this.art.potato, p.x + 2, p.y + 2 + bob, this.time, true, 0, 24);
     } else {
       ctx.fillStyle = "#ffd15c";
       ctx.beginPath();
@@ -1120,6 +1251,7 @@ export class SpudGame {
   }
 
   private paintLep(ctx: CanvasRenderingContext2D, e: Lep): void {
+    if (e.hurt > 0 && e.flat <= 0 && Math.floor(this.time * 22) % 2 === 0) return;
     const flat = e.flat > 0;
     const h = flat ? e.h * 0.38 : e.h;
     const y = flat ? e.y + e.h - h : e.y;
@@ -1128,8 +1260,19 @@ export class SpudGame {
     ctx.save();
     ctx.translate(e.x + e.w / 2, y + h);
     ctx.scale(dir, 1);
+    if (e.kind === "bruiser") ctx.filter = "saturate(1.5) hue-rotate(-18deg)";
+    else if (e.kind === "gold") ctx.filter = "sepia(1) saturate(2.2) hue-rotate(8deg)";
+    else if (e.kind === "swift") ctx.filter = "hue-rotate(275deg) saturate(1.35)";
+    else if (e.kind === "flyer") ctx.filter = "hue-rotate(40deg) saturate(1.15)";
     paintOutlined(ctx, this.art.lep, -e.w / 2 - 2, -h - 4 + wobble, e.w + 4, h + 6);
+    ctx.filter = "none";
     ctx.restore();
+    if (!flat && e.max > 1) {
+      ctx.fillStyle = "#14110d";
+      ctx.fillRect(e.x - 1, e.y - 12, e.w + 2, 8);
+      ctx.fillStyle = e.kind === "gold" ? "#ffd15c" : e.kind === "bruiser" ? "#e23d12" : "#8fd14f";
+      ctx.fillRect(e.x, e.y - 10, (e.w * Math.max(0, e.hp)) / e.max, 4);
+    }
   }
 
   private paintBoss(ctx: CanvasRenderingContext2D, b: Boss): void {
@@ -1202,10 +1345,9 @@ export class SpudGame {
         continue;
       }
       if (Math.abs(this.pupX - e.x) > reach) continue;
-      e.flat = 1.8;
+      this.hitEnemy(e, 1, "ARF!");
       this.pupBark = 0.7;
       sfx.bark();
-      this.addScore(150, e.x, e.y, "ARF!");
       this.float(this.pupX, this.pupY - 18, "ARF!", "#5ad4f0");
       this.burst(e.x + e.w / 2, e.y, "#5ad4f0", 8);
       return;
@@ -1249,6 +1391,14 @@ export class SpudGame {
     const w = this.kid.w + 8;
     const h = this.kid.h + 6;
     paintOutlined(ctx, img, x, y, w, h);
+    if (WEAPONS[this.weapon].gun) {
+      ctx.fillStyle = "#5a3416";
+      ctx.fillRect(this.kid.w * 0.18, -this.kid.h * 0.55, 28, 9);
+      ctx.fillStyle = "#f3d27a";
+      ctx.beginPath();
+      ctx.arc(this.kid.w * 0.18 + 30, -this.kid.h * 0.5, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 }

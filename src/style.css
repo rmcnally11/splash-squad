@@ -158,6 +158,12 @@ body {
   border-color: #c41e3a;
 }
 
+#super-chip {
+  color: #1b2418;
+  background: #ffe566;
+  border-color: #c41e3a;
+}
+
 #hud.starry .hud-chip {
   border-color: #ffe566;
   box-shadow: 0 0 12px rgba(255, 229, 102, 0.45);
@@ -171,6 +177,9 @@ body {
   display: grid;
   gap: 10px;
   margin-bottom: 8px;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .world-card {
@@ -226,7 +235,8 @@ body {
   align-items: center;
 }
 
-.throw {
+.throw,
+.super {
   width: 86px;
   height: 86px;
   border-radius: 22px;
@@ -235,6 +245,12 @@ body {
   box-shadow: 0 6px 0 #b8862a;
   font-size: 18px;
   letter-spacing: 0.04em;
+}
+
+.super {
+  background: #ffe566;
+  box-shadow: 0 6px 0 #b8862a;
+  font-size: 15px;
 }
 
 .jump-tip {
@@ -426,7 +442,8 @@ h2 {
 
 .pad,
 .jump,
-.throw {
+.throw,
+.super {
   border: 0;
   font: inherit;
   font-weight: 700;
@@ -461,7 +478,9 @@ h2 {
 .jump:active,
 .jump.on,
 .throw:active,
-.throw.on {
+.throw.on,
+.super:active,
+.super.on {
   transform: translateY(4px);
   box-shadow: 0 2px 0 #7a1224;
 }
@@ -501,7 +520,8 @@ h2 {
 
   .pad,
   .jump,
-  .throw {
+  .throw,
+  .super {
     pointer-events: auto;
     opacity: 0.88;
   }
@@ -515,5 +535,12 @@ h2 {
   :root {
     --pad: 76px;
     --jump: 92px;
+  }
+
+  .throw,
+  .super {
+    width: 72px;
+    height: 72px;
+    font-size: 14px;
   }
 }

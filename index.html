@@ -31,6 +31,7 @@
           </div>
           <div class="hud-chip" id="ammo-chip">THROW <span id="ammo-count">3</span></div>
           <div class="hud-chip" id="weapon-chip">SPUD</div>
+          <div class="hud-chip" id="super-chip" hidden>SUPER 0</div>
           <div class="hud-chip" id="hearts"></div>
           <div class="hud-chip" id="score">000000</div>
           <div class="hud-chip kid-chip">
@@ -60,11 +61,11 @@
 
           <section class="panel title-panel" data-screen="title" hidden>
             <img class="family-hero" src="/art/family.jpg" alt="Mallory, Luke, and Connor" />
-            <p class="eyebrow">Three kids. Three worlds. One king hat.</p>
+            <p class="eyebrow">Three kids. Six worlds. Bigger hats.</p>
             <h1>Spud Squad</h1>
             <p class="tagline">
-              Jump, stomp, and chuck potatoes. Pipey the dog tags along, snags spare spuds, and
-              barks hats flat. Grab a red blaster crate to upgrade your throw.
+              Jump, stomp, and chuck potatoes. Some leprechauns take extra hits. Grab a potato gun
+              to spray, or a glowing super potato to nuke the screen. Pipey tags along.
             </p>
             <p class="best-line" id="best-line" hidden>Best run 000000</p>
             <button type="button" class="cta" id="btn-play" disabled>Play</button>
@@ -119,7 +120,25 @@
               <button type="button" class="world-card" data-world="2">
                 <span class="world-num">3</span>
                 <strong>Rainbow Keep</strong>
-                <span>Castle climb. Stomp the King three times.</span>
+                <span>Castle climb. The King takes four hits.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="3">
+                <span class="world-num">4</span>
+                <strong>Shamrock Bog</strong>
+                <span>Murky water and three-hit bruisers.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="4">
+                <span class="world-num">5</span>
+                <strong>Gold Vault</strong>
+                <span>Armored hats. Four hits. Hold the gun.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="5">
+                <span class="world-num">6</span>
+                <strong>Kingpin Castle</strong>
+                <span>Every hat at once. The King takes eight.</span>
                 <em class="world-best" hidden></em>
               </button>
             </div>
@@ -166,8 +185,11 @@
           <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
         </div>
         <div class="jump-wrap">
-          <span class="jump-tip">J / F to throw</span>
+          <span class="jump-tip">J / F throw · G nuke</span>
           <div class="action-row">
+            <button type="button" id="btn-super" class="super" aria-label="Super potato" hidden>
+              SUPER
+            </button>
             <button type="button" id="btn-throw" class="throw" aria-label="Throw potato">SPUD</button>
             <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
           </div>

@@ -16,7 +16,9 @@ const heartsEl = document.getElementById("hearts")!;
 const potatoEl = document.getElementById("potato-count")!;
 const ammoEl = document.getElementById("ammo-count")!;
 const weaponEl = document.getElementById("weapon-chip");
+const superChip = document.getElementById("super-chip");
 const throwBtn = document.getElementById("btn-throw");
+const superBtn = document.getElementById("btn-super");
 const kidName = document.getElementById("kid-name")!;
 const kidFace = document.getElementById("kid-face") as HTMLImageElement | null;
 const dogFace = document.getElementById("dog-face") as HTMLImageElement | null;
@@ -107,6 +109,11 @@ function renderHud(info: HudInfo): void {
   ammoEl.textContent = String(info.ammo);
   if (weaponEl) weaponEl.textContent = info.weapon;
   if (throwBtn) throwBtn.textContent = info.weapon === "SPUD" ? "SPUD" : info.weapon;
+  if (superChip) {
+    superChip.hidden = info.superCharges <= 0;
+    superChip.textContent = `SUPER ${info.superCharges}`;
+  }
+  if (superBtn) superBtn.hidden = info.superCharges <= 0;
   heartsEl.textContent = `${"♥".repeat(info.hearts)}${"♡".repeat(Math.max(0, info.max - info.hearts))}`;
   scoreEl.textContent = String(info.score).padStart(6, "0");
   worldEl.textContent = info.world;

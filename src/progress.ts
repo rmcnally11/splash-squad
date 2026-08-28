@@ -1,9 +1,9 @@
-import type { KidId } from "./level.ts";
+import { WORLD_COUNT, type KidId } from "./level.ts";
 
 export type Progress = {
   unlocked: number;
   lastKid: KidId;
-  best: [number, number, number];
+  best: number[];
   highScore: number;
 };
 
@@ -19,8 +19,13 @@ function score(value: unknown): number {
   return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
 }
 
+function scores(value: unknown): number[] {
+  const arr = Array.isArray(value) ? value : [];
+  return Array.from({ length: WORLD_COUNT }, (_, i) => score(arr[i]));
+}
+
 export function emptyProgress(): Progress {
-  return { unlocked: 1, lastKid: "boots", best: [0, 0, 0], highScore: 0 };
+  return { unlocked: 1, lastKid: "boots", best: scores([]), highScore: 0 };
 }
 
 export function loadProgress(): Progress {
@@ -28,12 +33,8 @@ export function loadProgress(): Progress {
     const raw = localStorage.getItem(KEY);
     if (!raw) return emptyProgress();
     const data = JSON.parse(raw) as Partial<Progress>;
-    const unlocked = Math.min(3, Math.max(1, score(data.unlocked) || 1));
-    const best: [number, number, number] = [
-      score(data.best?.[0]),
-      score(data.best?.[1]),
-      score(data.best?.[2]),
-    ];
+    const unlocked = Math.min(WORLD_COUNT, Math.max(1, score(data.unlocked) || 1));
+    const best = scores(data.best);
     return {
       unlocked,
       lastKid: kidId(data.lastKid),
@@ -56,11 +57,11 @@ export function saveProgress(progress: Progress): void {
 export function recordClear(progress: Progress, worldId: number, scoreValue: number): Progress {
   const next = {
     ...progress,
-    unlocked: Math.min(3, Math.max(progress.unlocked, worldId + 2)),
-    best: [...progress.best] as [number, number, number],
+    unlocked: Math.min(WORLD_COUNT, Math.max(progress.unlocked, worldId + 2)),
+    best: scores(progress.best),
     highScore: Math.max(progress.highScore, scoreValue),
   };
-  if (worldId >= 0 && worldId < 3) {
+  if (worldId >= 0 && worldId < WORLD_COUNT) {
     next.best[worldId] = Math.max(next.best[worldId], scoreValue);
   }
   saveProgress(next);

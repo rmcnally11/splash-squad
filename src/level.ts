@@ -1,6 +1,9 @@
 export type KidId = "boots" | "ace" | "pip";
-export type WorldId = 0 | 1 | 2;
-export type Theme = "meadow" | "mine" | "keep";
+export type WorldId = 0 | 1 | 2 | 3 | 4 | 5;
+export type Theme = "meadow" | "mine" | "keep" | "bog" | "vault";
+export type LepKind = "hat" | "bruiser" | "swift" | "flyer" | "gold";
+
+export const WORLD_COUNT = 6;
 
 export type Platform = {
   x: number;
@@ -15,7 +18,7 @@ export type Potato = { x: number; y: number; taken: boolean; gold: boolean };
 export type Pickup = {
   x: number;
   y: number;
-  kind: "star" | "shamrock" | "gold" | "blaster";
+  kind: "star" | "shamrock" | "gold" | "blaster" | "gun" | "super";
   taken: boolean;
 };
 export type Spring = { x: number; y: number; w: number; h: number; boost: number };
@@ -46,6 +49,10 @@ export type Lep = {
   bot: number;
   flat: number;
   fly: boolean;
+  kind: LepKind;
+  hp: number;
+  max: number;
+  hurt: number;
 };
 export type Shot = { x: number; y: number; vx: number; vy: number; life: number };
 export type Boss = {
@@ -61,6 +68,8 @@ export type Boss = {
   jumpT: number;
   throwT: number;
   alive: boolean;
+  left: number;
+  right: number;
 };
 
 export type KidStats = {
@@ -137,7 +146,7 @@ export const WORLD_H = 820;
 export const GROUND = 700;
 
 export function makeWorlds(): WorldDef[] {
-  return [meadow(), mine(), keep()];
+  return [meadow(), mine(), keep(), bog(), vault(), kingpin()];
 }
 
 function meadow(): WorldDef {
@@ -186,19 +195,19 @@ function meadow(): WorldDef {
       t(4860, 640),
     ],
     leps: [
-      walk(520, GROUND, 200, 700),
-      walk(1100, 520, 990, 1180),
-      walk(2100, GROUND, 1900, 2500),
-      walk(3100, GROUND, 2960, 3600),
-      walk(4400, GROUND, 4100, 4900),
-      fly(1500, 420, 1380, 1720, 300, 480),
+      hat(520, GROUND, 200, 700),
+      hat(1100, 520, 990, 1180),
+      hat(2100, GROUND, 1900, 2500),
+      hat(3100, GROUND, 2960, 3600),
+      flyer(1500, 420, 1380, 1720, 300, 480),
+      bruiser(4400, GROUND, 4100, 4900),
     ],
     springs: [{ x: 780, y: 678, w: 44, h: 22, boost: 1180 }],
     movers: [mover(2580, 470, 150, 2480, 2780, 70, "x")],
     pickups: [
       { x: 1300, y: 330, kind: "shamrock", taken: false },
       { x: 1680, y: 458, kind: "blaster", taken: false },
-      { x: 2500, y: 278, kind: "star", taken: false },
+      { x: 2500, y: 278, kind: "gun", taken: false },
       { x: 3780, y: 228, kind: "gold", taken: false },
     ],
     checks: [
@@ -213,7 +222,7 @@ function mine(): WorldDef {
   return {
     id: 1,
     name: "Lucky Mine",
-    subtitle: "Dark tunnels, glow taters, flying hats.",
+    subtitle: "Dark tunnels, glow taters, two-hit flyers.",
     theme: "mine",
     w: 5400,
     doorX: 5160,
@@ -258,15 +267,15 @@ function mine(): WorldDef {
       t(5000, 640),
     ],
     leps: [
-      walk(400, GROUND, 80, 600),
-      walk(1000, GROUND, 840, 1280),
-      walk(1800, GROUND, 1600, 2200),
-      walk(2700, GROUND, 2500, 3060),
-      walk(3600, GROUND, 3420, 4000),
-      walk(4700, GROUND, 4460, 5200),
-      fly(700, 360, 520, 900, 240, 420),
-      fly(2100, 280, 1900, 2360, 200, 380),
-      fly(4000, 300, 3780, 4240, 220, 400),
+      hat(400, GROUND, 80, 600),
+      hat(1000, GROUND, 840, 1280, 2),
+      swift(1800, GROUND, 1600, 2200),
+      hat(2700, GROUND, 2500, 3060, 2),
+      bruiser(3600, GROUND, 3420, 4000),
+      hat(4700, GROUND, 4460, 5200, 2),
+      flyer(700, 360, 520, 900, 240, 420),
+      flyer(2100, 280, 1900, 2360, 200, 380),
+      flyer(4000, 300, 3780, 4240, 220, 400, 3),
     ],
     springs: [
       { x: 740, y: 678, w: 44, h: 22, boost: 1240 },
@@ -279,8 +288,8 @@ function mine(): WorldDef {
     pickups: [
       { x: 1400, y: 312, kind: "shamrock", taken: false },
       { x: 1880, y: 458, kind: "blaster", taken: false },
-      { x: 2660, y: 252, kind: "star", taken: false },
-      { x: 4300, y: 292, kind: "gold", taken: false },
+      { x: 2660, y: 252, kind: "gun", taken: false },
+      { x: 4300, y: 292, kind: "super", taken: false },
     ],
     checks: [
       { x: 1640, y: GROUND - 70, got: false },
@@ -294,7 +303,7 @@ function keep(): WorldDef {
   return {
     id: 2,
     name: "Rainbow Keep",
-    subtitle: "Castle run. Stomp the King three times.",
+    subtitle: "Castle run. Stomp the King four times.",
     theme: "keep",
     w: 5000,
     doorX: 4760,
@@ -336,13 +345,13 @@ function keep(): WorldDef {
       t(4620, 640),
     ],
     leps: [
-      walk(480, GROUND, 120, 680),
-      walk(1100, GROUND, 900, 1500),
-      walk(2000, GROUND, 1820, 2480),
-      walk(3100, GROUND, 2800, 3500),
-      fly(900, 320, 720, 1100, 220, 400),
-      fly(2400, 280, 2140, 2680, 200, 380),
-      fly(3500, 260, 3280, 3780, 180, 360),
+      hat(480, GROUND, 120, 680, 2),
+      swift(1100, GROUND, 900, 1500),
+      bruiser(2000, GROUND, 1820, 2480),
+      goldie(3100, GROUND, 2800, 3500),
+      flyer(900, 320, 720, 1100, 220, 400),
+      flyer(2400, 280, 2140, 2680, 200, 380, 3),
+      flyer(3500, 260, 3280, 3780, 180, 360, 3),
     ],
     springs: [
       { x: 760, y: 678, w: 44, h: 22, boost: 1220 },
@@ -355,27 +364,263 @@ function keep(): WorldDef {
     pickups: [
       { x: 1160, y: 312, kind: "shamrock", taken: false },
       { x: 1920, y: 298, kind: "blaster", taken: false },
-      { x: 2580, y: 252, kind: "star", taken: false },
-      { x: 3680, y: 192, kind: "gold", taken: false },
+      { x: 2580, y: 252, kind: "gun", taken: false },
+      { x: 3680, y: 192, kind: "super", taken: false },
     ],
     checks: [
       { x: 1800, y: GROUND - 70, got: false },
       { x: 3200, y: GROUND - 70, got: false },
     ],
-    boss: {
-      x: 4200,
-      y: GROUND - 110,
-      w: 92,
-      h: 110,
-      vx: 90,
-      vy: 0,
-      hp: 3,
-      max: 3,
-      hurt: 0,
-      jumpT: 1.4,
-      throwT: 1.1,
-      alive: true,
-    },
+    boss: king(4200, 4, 108, 128, 3920, 4700),
+  };
+}
+
+function bog(): WorldDef {
+  return {
+    id: 3,
+    name: "Shamrock Bog",
+    subtitle: "Murky water, bruisers, and a first real gauntlet.",
+    theme: "bog",
+    w: 5600,
+    doorX: 5360,
+    lockedDoor: false,
+    platforms: [
+      g(0, 680),
+      g(780, 620),
+      g(1560, 740),
+      g(2480, 700),
+      g(3380, 820),
+      g(4460, 1140),
+      p(240, 540, 170, "wood"),
+      p(500, 420, 150, "stone"),
+      p(860, 500, 190, "wood"),
+      p(1180, 360, 140, "stone"),
+      p(1540, 470, 180, "wood"),
+      p(1960, 330, 150, "stone"),
+      p(2320, 480, 170, "wood"),
+      p(2740, 300, 140, "stone"),
+      p(3140, 450, 200, "wood"),
+      p(3520, 320, 150, "stone"),
+      p(3900, 460, 180, "wood"),
+      p(4280, 300, 150, "stone"),
+      p(4700, 480, 190, "wood"),
+      p(5060, 360, 150, "stone"),
+    ],
+    potatoes: [
+      t(280, 498),
+      t(540, 378),
+      t(900, 458),
+      t(1220, 318, true),
+      t(1580, 428),
+      t(2000, 288),
+      t(2360, 438),
+      t(2780, 258, true),
+      t(3000, 640),
+      t(3180, 408),
+      t(3560, 278),
+      t(3940, 418),
+      t(4320, 258, true),
+      t(4740, 438),
+      t(5100, 318),
+      t(5280, 640),
+    ],
+    leps: [
+      hat(420, GROUND, 80, 640, 2, 90),
+      bruiser(980, GROUND, 800, 1320),
+      swift(1700, GROUND, 1580, 2200),
+      bruiser(2600, GROUND, 2500, 3100),
+      goldie(3500, GROUND, 3400, 4100),
+      bruiser(4700, GROUND, 4480, 5200),
+      flyer(700, 340, 520, 980, 220, 420, 3),
+      flyer(2100, 280, 1880, 2460, 200, 400, 3),
+      flyer(3800, 260, 3560, 4140, 180, 380, 3),
+      flyer(5000, 300, 4780, 5280, 200, 400, 3),
+    ],
+    springs: [
+      { x: 720, y: 678, w: 44, h: 22, boost: 1240 },
+      { x: 2880, y: 678, w: 44, h: 22, boost: 1280 },
+    ],
+    movers: [
+      mover(1420, 430, 150, 1320, 1680, 70, "x"),
+      mover(3360, 400, 140, 280, 500, 55, "y"),
+    ],
+    pickups: [
+      { x: 1200, y: 312, kind: "shamrock", taken: false },
+      { x: 1960, y: 288, kind: "blaster", taken: false },
+      { x: 2760, y: 252, kind: "gun", taken: false },
+      { x: 4300, y: 252, kind: "super", taken: false },
+    ],
+    checks: [
+      { x: 1680, y: GROUND - 70, got: false },
+      { x: 3440, y: GROUND - 70, got: false },
+    ],
+    boss: null,
+  };
+}
+
+function vault(): WorldDef {
+  return {
+    id: 4,
+    name: "Gold Vault",
+    subtitle: "Armored hats. Four hits. Hold the gun and don't blink.",
+    theme: "vault",
+    w: 5800,
+    doorX: 5560,
+    lockedDoor: false,
+    platforms: [
+      g(0, 700),
+      g(860, 640),
+      g(1680, 760),
+      g(2640, 720),
+      g(3580, 800),
+      g(4620, 1180),
+      { x: 1240, y: 608, w: 280, h: 26, oneWay: false, kind: "ceiling" },
+      { x: 3020, y: 590, w: 260, h: 26, oneWay: false, kind: "ceiling" },
+      p(280, 530, 170, "crystal"),
+      p(560, 400, 150, "stone"),
+      p(940, 470, 180, "crystal"),
+      p(1320, 340, 140, "stone"),
+      p(1760, 490, 200, "crystal"),
+      p(2140, 340, 150, "stone"),
+      p(2520, 280, 130, "crystal"),
+      p(2960, 460, 190, "stone"),
+      p(3340, 310, 150, "crystal"),
+      p(3760, 460, 180, "stone"),
+      p(4140, 320, 140, "crystal"),
+      p(4520, 470, 180, "stone"),
+      p(4980, 340, 160, "crystal"),
+      p(5280, 480, 170, "stone"),
+    ],
+    potatoes: [
+      t(320, 488),
+      t(600, 358),
+      t(980, 428),
+      t(1360, 298, true),
+      t(1800, 448),
+      t(2180, 298),
+      t(2560, 238, true),
+      t(2800, 640),
+      t(3000, 418),
+      t(3380, 268),
+      t(3800, 418),
+      t(4180, 278, true),
+      t(4560, 428),
+      t(5020, 298),
+      t(5320, 438),
+      t(5480, 640),
+    ],
+    leps: [
+      goldie(380, GROUND, 80, 680),
+      swift(1100, GROUND, 880, 1480),
+      bruiser(1900, GROUND, 1720, 2360),
+      goldie(2800, GROUND, 2660, 3300),
+      bruiser(3700, GROUND, 3600, 4200),
+      goldie(4700, GROUND, 4640, 5400),
+      flyer(700, 340, 500, 960, 220, 420, 3),
+      flyer(2200, 260, 1980, 2480, 180, 380, 3),
+      flyer(3500, 240, 3260, 3840, 160, 360, 3),
+      flyer(5100, 280, 4860, 5460, 180, 380, 3),
+    ],
+    springs: [
+      { x: 780, y: 678, w: 44, h: 22, boost: 1260 },
+      { x: 2460, y: 678, w: 44, h: 22, boost: 1240 },
+    ],
+    movers: [
+      mover(1540, 430, 150, 320, 520, 60, "y"),
+      mover(4080, 400, 150, 3920, 4320, 85, "x"),
+    ],
+    pickups: [
+      { x: 1340, y: 292, kind: "shamrock", taken: false },
+      { x: 1760, y: 448, kind: "blaster", taken: false },
+      { x: 2540, y: 232, kind: "gun", taken: false },
+      { x: 4160, y: 272, kind: "super", taken: false },
+      { x: 5280, y: 432, kind: "super", taken: false },
+    ],
+    checks: [
+      { x: 1760, y: GROUND - 70, got: false },
+      { x: 3620, y: GROUND - 70, got: false },
+    ],
+    boss: null,
+  };
+}
+
+function kingpin(): WorldDef {
+  return {
+    id: 5,
+    name: "Kingpin Castle",
+    subtitle: "Every hat at once. The King takes eight hits.",
+    theme: "keep",
+    w: 5400,
+    doorX: 5160,
+    lockedDoor: true,
+    platforms: [
+      g(0, 720),
+      g(860, 700),
+      g(1760, 780),
+      g(2740, 820),
+      g(3840, 1320),
+      p(240, 540, 170, "brick"),
+      p(500, 400, 150, "wood"),
+      p(840, 490, 180, "brick"),
+      p(1180, 340, 140, "stone"),
+      p(1540, 470, 190, "brick"),
+      p(1920, 320, 150, "wood"),
+      p(2280, 450, 160, "brick"),
+      p(2620, 280, 140, "stone"),
+      p(3040, 490, 200, "brick"),
+      p(3400, 340, 160, "wood"),
+      p(3740, 220, 140, "stone"),
+      p(4140, 460, 220, "brick"),
+      p(4560, 330, 160, "wood"),
+    ],
+    potatoes: [
+      t(280, 498),
+      t(540, 358),
+      t(880, 448),
+      t(1220, 298, true),
+      t(1580, 428),
+      t(1960, 278),
+      t(2320, 408),
+      t(2660, 238, true),
+      t(2920, 640),
+      t(3100, 448),
+      t(3440, 298),
+      t(3780, 178, true),
+      t(4180, 418),
+      t(4600, 288),
+      t(4900, 640),
+      t(5080, 640),
+    ],
+    leps: [
+      bruiser(460, GROUND, 120, 720),
+      swift(1100, GROUND, 900, 1560),
+      goldie(2000, GROUND, 1800, 2500),
+      bruiser(3000, GROUND, 2780, 3480),
+      goldie(3600, GROUND, 3520, 4000),
+      flyer(800, 300, 640, 1080, 200, 400, 3),
+      flyer(2300, 260, 2060, 2640, 180, 380, 3),
+      flyer(3400, 240, 3180, 3720, 160, 360, 3),
+    ],
+    springs: [
+      { x: 740, y: 678, w: 44, h: 22, boost: 1240 },
+      { x: 2700, y: 678, w: 44, h: 22, boost: 1280 },
+    ],
+    movers: [
+      mover(1700, 390, 140, 1580, 1900, 80, "x"),
+      mover(3520, 400, 130, 260, 480, 65, "y"),
+    ],
+    pickups: [
+      { x: 1200, y: 292, kind: "shamrock", taken: false },
+      { x: 1920, y: 278, kind: "blaster", taken: false },
+      { x: 2640, y: 232, kind: "gun", taken: false },
+      { x: 3760, y: 172, kind: "super", taken: false },
+      { x: 4560, y: 282, kind: "super", taken: false },
+    ],
+    checks: [
+      { x: 1760, y: GROUND - 70, got: false },
+      { x: 3280, y: GROUND - 70, got: false },
+    ],
+    boss: king(4400, 8, 128, 148, 4100, 5080),
   };
 }
 
@@ -391,37 +636,68 @@ function t(x: number, y: number, gold = false): Potato {
   return { x, y, taken: false, gold };
 }
 
-function walk(x: number, footY: number, left: number, right: number): Lep {
-  return {
-    x,
-    y: footY - 46,
-    w: 40,
-    h: 46,
-    vx: 78,
-    vy: 0,
-    left,
-    right,
-    top: 0,
-    bot: 0,
-    flat: 0,
-    fly: false,
-  };
+function lep(
+  kind: LepKind,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  vx: number,
+  vy: number,
+  left: number,
+  right: number,
+  top: number,
+  bot: number,
+  fly: boolean,
+  hp: number,
+): Lep {
+  return { x, y, w, h, vx, vy, left, right, top, bot, flat: 0, fly, kind, hp, max: hp, hurt: 0 };
 }
 
-function fly(x: number, y: number, left: number, right: number, top: number, bot: number): Lep {
+function hat(x: number, footY: number, left: number, right: number, hp = 1, speed = 72): Lep {
+  return lep("hat", x, footY - 64, 56, 64, speed, 0, left, right, 0, 0, false, hp);
+}
+
+function bruiser(x: number, footY: number, left: number, right: number, hp = 3): Lep {
+  return lep("bruiser", x, footY - 100, 88, 100, 48, 0, left, right, 0, 0, false, hp);
+}
+
+function swift(x: number, footY: number, left: number, right: number, hp = 2): Lep {
+  return lep("swift", x, footY - 58, 50, 58, 140, 0, left, right, 0, 0, false, hp);
+}
+
+function flyer(
+  x: number,
+  y: number,
+  left: number,
+  right: number,
+  top: number,
+  bot: number,
+  hp = 2,
+): Lep {
+  return lep("flyer", x, y, 54, 54, 96, 44, left, right, top, bot, true, hp);
+}
+
+function goldie(x: number, footY: number, left: number, right: number, hp = 4): Lep {
+  return lep("gold", x, footY - 82, 72, 82, 42, 0, left, right, 0, 0, false, hp);
+}
+
+function king(x: number, hp: number, w: number, h: number, left: number, right: number): Boss {
   return {
     x,
-    y,
-    w: 40,
-    h: 40,
-    vx: 90,
-    vy: 40,
+    y: GROUND - h,
+    w,
+    h,
+    vx: 88,
+    vy: 0,
+    hp,
+    max: hp,
+    hurt: 0,
+    jumpT: 1.4,
+    throwT: 1.1,
+    alive: true,
     left,
     right,
-    top,
-    bot,
-    flat: 0,
-    fly: true,
   };
 }
 
