@@ -1,6 +1,10 @@
-# Spud Squad
+# Splash Squad
 
-Phone-first arcade platformer. Cartoon kids, bigger leprechauns, six worlds, a potato gun, and a super potato that nukes the screen.
+Phone-first arcade platformer. Mallory, Luke, Connor, and Pipey soak evil surfer dudes with water balloons.
+
+**GitHub:** [github.com/rmcnally11/splash-squad](https://github.com/rmcnally11/splash-squad)
+
+**Play:** [spud-squad.vercel.app](https://spud-squad.vercel.app) (same live URL while we keep the Vercel project)
 
 ## Play locally
 
@@ -11,70 +15,46 @@ npm run dev
 
 Open [http://127.0.0.1:43173](http://127.0.0.1:43173).
 
-Thumbs: **◀ / ▶**, **JUMP**, **SPUD**, and **SUPER** when you have a nuke. Air JUMP is that kid’s trick. Keyboard: arrows or WASD, space to jump, **J** / **F** to throw, **G** or **Shift** to nuke.
+Thumbs: **◀ / ▶**, **JUMP**, **TOSS**, and **SUPER** when you have a soak. Air JUMP is that kid’s trick. Keyboard: arrows or WASD, space to jump, **J** / **F** to throw, **G** or **Shift** to soak the screen.
 
-Hold **SPUD** when you have the potato gun to keep firing.
+Hold **TOSS** when you have the balloon gun to keep firing.
+
+Want the gun and a nuke immediately? Add `?kit=1` to the URL.
 
 ## Weapons
 
-Start with a single **SPUD**. Grab crates to upgrade:
-
-1. **SPUD** — one potato
+1. **TOSS** — one water balloon
 2. **RAPID** — faster shots
-3. **SPREAD** — three-way blast
-4. **HOT SPUD** — bigger bomb, extra King damage
-5. **GUN** — brown crate. Hold to spray fast, flat shots
+3. **SPREAD** — three-way splash
+4. **SOAK** — bigger burst, extra King damage
+5. **GUN** — brown crate. Hold to spray
 
-A glowing **super potato** gives one screen nuke. Enemies on camera go down. The King still takes a chunk.
+A glowing **super soak** nukes every dude on camera. The Surf King still takes a chunk.
 
-Collect potatoes for ammo. Gold spuds give more.
+Collect balloons for ammo. Icy gold balloons give more.
 
 ## Enemies
 
-Hats are bigger now, and some take more than one hit — like TMNT. They flash, show a life bar, then flatten.
+Evil surfer dudes. Some take more than one hit — they flash, show a life bar, then flatten.
 
 | Enemy | Hits | Notes |
 | --- | --- | --- |
-| Green hat | 1–2 | Regular walker, bigger than before |
+| Regular dude | 1–2 | Teal shorts |
 | Swift | 2 | Purple, faster |
-| Flyer | 2–3 | Floats on a path |
+| Flyer | 2–3 | On a board in the air |
 | Bruiser | 3 | Red, huge, slow |
-| Gold hat | 4 | Armored |
-| King | 4, then 8 | World 3 and world 6 |
-
-Stomps, potatoes, Luke’s pound, and Pipey’s bark all chip health. Pound and star hits do two.
-
-## The kids
-
-| Kid | Trick |
-| --- | --- |
-| **Mallory** | Air jump — second leap. Highest hat bounce. |
-| **Luke** | Ground pound. Extra heart. |
-| **Connor** | Dash. Fastest. Fits under beams. |
-
-The family photo is baked in: title shot plus Mallory, Luke, and Connor portraits. In the run they use the cartoon bodies.
-
-**Pipey** follows, snags nearby potatoes, and barks hats for one hit.
-
-World unlocks and best scores stay on the device. Switch apps and the run pauses.
+| Gold shades | 4 | Armored |
+| Surf King | 4, then 8 | Pipeline and Wipeout Peak |
 
 ## Worlds
 
-1. **Potato Patch** — learn the tricks, meet a bruiser
-2. **Lucky Mine** — two-hit flyers, first super potato
-3. **Rainbow Keep** — King, four hits
-4. **Shamrock Bog** — bruiser gauntlet
-5. **Gold Vault** — four-hit armored hats
-6. **Kingpin Castle** — every type, King takes eight
+1. **Tide Pool**
+2. **Boardwalk**
+3. **Pipeline** — Surf King, four hits
+4. **Kelp Caves**
+5. **Gold Coast**
+6. **Wipeout Peak** — Surf King, eight hits
 
-## Publish the full game
+## Publish
 
-Do **not** use tiny one-off file uploads. Those drop `/art` and you get boxes instead of cartoons.
-
-From this folder, after `npm run build`:
-
-```bash
-npx vercel deploy dist --yes
-```
-
-Or push the repo to GitHub and link that repo in Vercel (framework **Vite**, output `dist`). Then every push ships the cartoon PNGs, the family photo, and the game together.
+Vite app. Output is `dist`. Link this GitHub repo in Vercel (framework **Vite**, output `dist`) so every push ships the cartoons, family photo, and game together.

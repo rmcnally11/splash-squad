@@ -7,7 +7,7 @@ export type Progress = {
   highScore: number;
 };
 
-const KEY = "spud-squad-v1";
+const KEY = "splash-squad-v1";
 
 function kidId(value: unknown): KidId {
   if (value === "ace" || value === "pip") return value;

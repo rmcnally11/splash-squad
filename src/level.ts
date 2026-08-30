@@ -152,8 +152,8 @@ export function makeWorlds(): WorldDef[] {
 function meadow(): WorldDef {
   return {
     id: 0,
-    name: "Potato Patch",
-    subtitle: "Sunny fields. Learn your trick. Beat the pits.",
+    name: "Tide Pool",
+    subtitle: "Sunny sand. Learn your trick. Soak the first dude.",
     theme: "meadow",
     w: 5200,
     doorX: 4980,
@@ -221,8 +221,8 @@ function meadow(): WorldDef {
 function mine(): WorldDef {
   return {
     id: 1,
-    name: "Lucky Mine",
-    subtitle: "Dark tunnels, glow taters, two-hit flyers.",
+    name: "Boardwalk",
+    subtitle: "Night pier, neon lights, two-hit flyers.",
     theme: "mine",
     w: 5400,
     doorX: 5160,
@@ -302,8 +302,8 @@ function mine(): WorldDef {
 function keep(): WorldDef {
   return {
     id: 2,
-    name: "Rainbow Keep",
-    subtitle: "Castle run. Stomp the King four times.",
+    name: "Pipeline",
+    subtitle: "Big wave run. Soak the Surf King four times.",
     theme: "keep",
     w: 5000,
     doorX: 4760,
@@ -378,8 +378,8 @@ function keep(): WorldDef {
 function bog(): WorldDef {
   return {
     id: 3,
-    name: "Shamrock Bog",
-    subtitle: "Murky water, bruisers, and a first real gauntlet.",
+    name: "Kelp Caves",
+    subtitle: "Green water, bruisers, and a real gauntlet.",
     theme: "bog",
     w: 5600,
     doorX: 5360,
@@ -461,8 +461,8 @@ function bog(): WorldDef {
 function vault(): WorldDef {
   return {
     id: 4,
-    name: "Gold Vault",
-    subtitle: "Armored hats. Four hits. Hold the gun and don't blink.",
+    name: "Gold Coast",
+    subtitle: "Gold-shade dudes. Four hits. Hold the balloon gun.",
     theme: "vault",
     w: 5800,
     doorX: 5560,
@@ -547,8 +547,8 @@ function vault(): WorldDef {
 function kingpin(): WorldDef {
   return {
     id: 5,
-    name: "Kingpin Castle",
-    subtitle: "Every hat at once. The King takes eight hits.",
+    name: "Wipeout Peak",
+    subtitle: "Every dude at once. The Surf King takes eight.",
     theme: "keep",
     w: 5400,
     doorX: 5160,

@@ -108,7 +108,7 @@ function renderHud(info: HudInfo): void {
   potatoEl.textContent = `${info.got}/${info.total}`;
   ammoEl.textContent = String(info.ammo);
   if (weaponEl) weaponEl.textContent = info.weapon;
-  if (throwBtn) throwBtn.textContent = info.weapon === "SPUD" ? "SPUD" : info.weapon;
+  if (throwBtn) throwBtn.textContent = info.weapon === "TOSS" ? "TOSS" : info.weapon;
   if (superChip) {
     superChip.hidden = info.superCharges <= 0;
     superChip.textContent = `SUPER ${info.superCharges}`;
@@ -139,11 +139,11 @@ void (async () => {
           if (last) {
             winCopy.textContent =
               got === total
-                ? `Perfect run — ${got} potatoes and ${score} points. The King is toast.`
-                : `The keep is yours with ${got} of ${total} potatoes and ${score} points.`;
+                ? `Perfect run — ${got} balloons and ${score} points. The Surf King is soaked.`
+                : `The peak is yours with ${got} of ${total} balloons and ${score} points.`;
             show("win");
           } else {
-            clearCopy.textContent = `${world} cleared! ${got}/${total} potatoes · ${score} pts. Next world is unlocked.`;
+            clearCopy.textContent = `${world} cleared! ${got}/${total} balloons · ${score} pts. Next beach is unlocked.`;
             show("clear");
           }
         },
@@ -159,7 +159,7 @@ void (async () => {
     if (playBtn) playBtn.disabled = false;
     show("title");
   } catch (err) {
-    fail(err instanceof Error ? err.message : "Could not load Spud Squad.");
+    fail(err instanceof Error ? err.message : "Could not load Splash Squad.");
   }
 })();
 

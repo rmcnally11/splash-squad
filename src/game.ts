@@ -15,7 +15,7 @@ import {
   type Shot,
   type WorldDef,
 } from "./level.ts";
-import { kidSprite, paintBoom, paintOutlined, paintSpud, type Art } from "./sprites.ts";
+import { kidSprite, paintBalloon, paintBoom, paintOutlined, paintSurfer, type Art } from "./sprites.ts";
 
 type Particle = {
   x: number;
@@ -42,10 +42,10 @@ type Boom = { x: number; y: number; life: number; max: number; big: boolean };
 type WeaponId = 0 | 1 | 2 | 3 | 4;
 
 const WEAPONS = [
-  { name: "SPUD", cool: 0.26, shots: 1, hot: false, gun: false },
+  { name: "TOSS", cool: 0.26, shots: 1, hot: false, gun: false },
   { name: "RAPID", cool: 0.11, shots: 1, hot: false, gun: false },
   { name: "SPREAD", cool: 0.22, shots: 3, hot: false, gun: false },
-  { name: "HOT SPUD", cool: 0.3, shots: 1, hot: true, gun: false },
+  { name: "SOAK", cool: 0.3, shots: 1, hot: true, gun: false },
   { name: "GUN", cool: 0.07, shots: 1, hot: false, gun: true },
 ] as const;
 
@@ -434,7 +434,7 @@ export class SpudGame {
     this.nukeFlash = 0.5;
     this.shake = 0.55;
     sfx.nuke();
-    this.float(this.x, this.y - 30, "SUPER SPUD!", "#ffe566");
+    this.float(this.x, this.y - 30, "SUPER SOAK!", "#7de3f5");
     const left = this.camX - 20;
     const right = this.camX + this.viewW + 20;
     const top = this.camY - 20;
@@ -449,12 +449,12 @@ export class SpudGame {
       b.hp -= 3;
       b.hurt = 0.8;
       sfx.bossHit();
-      this.addScore(600, b.x, b.y, "KING NUKE");
+      this.addScore(600, b.x, b.y, "KING SOAK");
       this.explode(b.x + b.w / 2, b.y + b.h / 2, true);
       if (b.hp <= 0) {
         b.alive = false;
         this.world.lockedDoor = false;
-        this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+          this.float(b.x, b.y, "WIPEOUT!", "#7de3f5");
         this.addScore(2000, b.x, b.y, "BOSS");
       }
     }
@@ -501,7 +501,7 @@ export class SpudGame {
       for (const e of this.leps) {
         if (e.flat > 0) continue;
         if (!overlap(s.x - 10, s.y - 10, 20, 20, e.x, e.y, e.w, e.h)) continue;
-        this.hitEnemy(e, s.hot ? 2 : 1, s.hot ? "HOT" : "SPUD");
+        this.hitEnemy(e, s.hot ? 2 : 1, s.hot ? "SOAK" : "SPLASH");
         this.explode(e.x + e.w / 2, e.y + e.h / 2, s.hot);
         return false;
       }
@@ -515,7 +515,7 @@ export class SpudGame {
         if (b.hp <= 0) {
           b.alive = false;
           this.world.lockedDoor = false;
-          this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+          this.float(b.x, b.y, "WIPEOUT!", "#7de3f5");
           this.addScore(2000, b.x, b.y, "BOSS");
         }
         return false;
@@ -667,11 +667,11 @@ export class SpudGame {
         this.weapon = 4;
         this.ammo += 10;
         sfx.gold();
-        this.float(p.x, p.y, "POTATO GUN!", "#ff9a1f");
+        this.float(p.x, p.y, "BALLOON GUN!", "#7de3f5");
       } else if (p.kind === "super") {
         this.superCharges = Math.min(3, this.superCharges + 1);
         sfx.star();
-        this.float(p.x, p.y, "SUPER SPUD", "#ffe566");
+        this.float(p.x, p.y, "SUPER SOAK", "#7de3f5");
       } else {
         this.addScore(500, p.x, p.y, "GOLD");
         sfx.gold();
@@ -688,7 +688,7 @@ export class SpudGame {
       p.taken = true;
       this.ammo += p.gold ? 2 : 1;
       const pts = (p.gold ? 300 : 100) * (1 + this.combo);
-      this.addScore(pts, p.x, p.y, p.gold ? "GOLD SPUD" : "+");
+      this.addScore(pts, p.x, p.y, p.gold ? "GOLD BALLOON" : "+");
       if (p.gold) sfx.gold();
       else sfx.collect();
       this.burst(p.x + 14, p.y + 14, "#f3d27a", 10);
@@ -804,7 +804,7 @@ export class SpudGame {
       if (b.hp <= 0) {
         b.alive = false;
         this.world.lockedDoor = false;
-        this.float(b.x, b.y, "KING DOWN!", "#ffe566");
+          this.float(b.x, b.y, "WIPEOUT!", "#7de3f5");
         this.addScore(2000, b.x, b.y, "BOSS");
       }
     } else if (b.hurt <= 0 && this.star <= 0) {
@@ -935,7 +935,7 @@ export class SpudGame {
     }
     for (const p of this.potatoes) {
       if (p.taken) continue;
-      paintSpud(ctx, this.art.potato, p.x, p.y, this.time + p.x * 0.01, p.gold);
+      paintBalloon(ctx, p.x, p.y, this.time + p.x * 0.01, p.gold);
     }
     for (const e of this.leps) this.paintLep(ctx, e);
     for (const s of this.shots) {
@@ -948,7 +948,7 @@ export class SpudGame {
       ctx.stroke();
     }
     for (const s of this.spuds) {
-      paintSpud(ctx, this.art.potato, s.x - 14, s.y - 14, this.time, s.hot, s.spin, s.hot ? 34 : 26);
+      paintBalloon(ctx, s.x - 14, s.y - 14, this.time, s.hot, s.spin, s.hot ? 34 : 26);
     }
     if (this.world.boss?.alive) this.paintBoss(ctx, this.world.boss);
     this.paintPup(ctx);
@@ -1027,10 +1027,10 @@ export class SpudGame {
       g.addColorStop(0.7, "#c49a28");
       g.addColorStop(1, "#3a2a10");
     } else {
-      g.addColorStop(0, "#5ec4f0");
-      g.addColorStop(0.4, "#f3d27a");
-      g.addColorStop(0.7, "#7ec86a");
-      g.addColorStop(1, "#3d7a28");
+      g.addColorStop(0, "#4ec4f4");
+      g.addColorStop(0.35, "#9fe4ff");
+      g.addColorStop(0.7, "#f7e08a");
+      g.addColorStop(1, "#e8c46a");
     }
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, this.viewW, this.viewH);
@@ -1090,7 +1090,7 @@ export class SpudGame {
   }
 
   private paintDecor(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = this.world.theme === "mine" ? "#2f6a4a" : "#3d7a36";
+    ctx.fillStyle = this.world.theme === "mine" ? "#2f6a4a" : "#d4b45a";
     for (let x = 0; x < this.world.w; x += 28) {
       const h = 10 + ((x * 13) % 14);
       ctx.fillRect(x, GROUND - h, 6, h);
@@ -1119,13 +1119,13 @@ export class SpudGame {
     ctx.lineWidth = 5;
     ctx.lineJoin = "round";
     if (p.kind === "grass") {
-      ctx.fillStyle = "#6b3f1c";
+      ctx.fillStyle = "#c49a3a";
       ctx.fillRect(p.x, p.y, p.w, p.h);
       ctx.strokeRect(p.x + 2, p.y + 2, p.w - 4, p.h - 4);
-      ctx.fillStyle = "#3d9a32";
+      ctx.fillStyle = "#e8c46a";
       ctx.fillRect(p.x, p.y - 14, p.w, 18);
       ctx.strokeRect(p.x + 1, p.y - 14, p.w - 2, 18);
-      ctx.fillStyle = "#7de05a";
+      ctx.fillStyle = "#ffe8a0";
       ctx.fillRect(p.x + 4, p.y - 12, p.w - 8, 6);
       ctx.restore();
       return;
@@ -1228,7 +1228,7 @@ export class SpudGame {
       ctx.arc(p.x + 14, p.y + 14 + bob, 13, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      paintSpud(ctx, this.art.potato, p.x + 2, p.y + 2 + bob, this.time, true, 0, 24);
+      paintBalloon(ctx, p.x + 2, p.y + 2 + bob, this.time, true, 0, 24);
     } else {
       ctx.fillStyle = "#ffd15c";
       ctx.beginPath();
@@ -1265,17 +1265,12 @@ export class SpudGame {
     ctx.save();
     ctx.translate(e.x + e.w / 2, y + h);
     ctx.scale(dir, 1);
-    if (e.kind === "bruiser") ctx.filter = "saturate(1.5) hue-rotate(-18deg)";
-    else if (e.kind === "gold") ctx.filter = "sepia(1) saturate(2.2) hue-rotate(8deg)";
-    else if (e.kind === "swift") ctx.filter = "hue-rotate(275deg) saturate(1.35)";
-    else if (e.kind === "flyer") ctx.filter = "hue-rotate(40deg) saturate(1.15)";
-    paintOutlined(ctx, this.art.lep, -e.w / 2 - 2, -h - 4 + wobble, e.w + 4, h + 6);
-    ctx.filter = "none";
+    paintSurfer(ctx, e.kind, -e.w / 2 - 2, -h - 4 + wobble, e.w + 4, h + 6, flat);
     ctx.restore();
     if (!flat && e.max > 1) {
       ctx.fillStyle = "#14110d";
       ctx.fillRect(e.x - 1, e.y - 12, e.w + 2, 8);
-      ctx.fillStyle = e.kind === "gold" ? "#ffd15c" : e.kind === "bruiser" ? "#e23d12" : "#8fd14f";
+      ctx.fillStyle = e.kind === "gold" ? "#ffd15c" : e.kind === "bruiser" ? "#e23d12" : "#3ec6e8";
       ctx.fillRect(e.x, e.y - 10, (e.w * Math.max(0, e.hp)) / e.max, 4);
     }
   }
@@ -1285,11 +1280,11 @@ export class SpudGame {
     ctx.save();
     ctx.translate(b.x + b.w / 2, b.y + b.h);
     ctx.scale(b.vx >= 0 ? 1.35 : -1.35, 1.35);
-    ctx.fillStyle = "#c41e3a";
+    ctx.fillStyle = "#0b6e99";
     ctx.beginPath();
     ctx.ellipse(0, -b.h * 0.4, b.w * 0.38, b.h * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
-    paintOutlined(ctx, this.art.lep, -b.w / 2 / 1.35, -b.h / 1.35, b.w / 1.35, b.h / 1.35);
+    paintSurfer(ctx, "gold", -b.w / 2 / 1.35, -b.h / 1.35, b.w / 1.35, b.h / 1.35, false);
     ctx.restore();
     ctx.fillStyle = "#14110d";
     ctx.fillRect(b.x - 2, b.y - 18, b.w + 4, 12);

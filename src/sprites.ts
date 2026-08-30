@@ -217,9 +217,8 @@ export function ink(
   ctx.restore();
 }
 
-export function paintSpud(
+export function paintBalloon(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
   x: number,
   y: number,
   t: number,
@@ -230,22 +229,110 @@ export function paintSpud(
   ctx.save();
   ctx.translate(x + size / 2, y + size / 2 + Math.sin(t * 6) * 2);
   ctx.rotate(spin);
-  ctx.scale(gold ? 1.15 : 1, gold ? 1.15 : 1);
+  const fill = gold ? "#7de3f5" : "#ff5b8a";
   ink(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.ellipse(0, 0, size * 0.48, size * 0.4, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, -size * 0.06, size * 0.38, size * 0.42, 0, 0, Math.PI * 2);
     },
-    gold ? "#ffd15c" : "#c48a2a",
-    "#2a1a0a",
-    5,
+    fill,
+    "#14110d",
+    4,
   );
-  ctx.drawImage(img, -size * 0.46, -size * 0.46, size * 0.92, size * 0.92);
-  ctx.fillStyle = "rgba(255,255,220,0.45)";
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.moveTo(-3, size * 0.32);
+      ctx.lineTo(0, size * 0.42);
+      ctx.lineTo(3, size * 0.32);
+      ctx.closePath();
+    },
+    fill,
+    "#14110d",
+    3,
+  );
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
   ctx.beginPath();
-  ctx.ellipse(-size * 0.14, -size * 0.12, 5, 3, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(-size * 0.12, -size * 0.16, size * 0.1, size * 0.14, -0.4, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+export function paintSurfer(
+  ctx: CanvasRenderingContext2D,
+  kind: "hat" | "bruiser" | "swift" | "flyer" | "gold",
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  flat: boolean,
+): void {
+  const shorts =
+    kind === "bruiser" ? "#c41e3a" : kind === "gold" ? "#ffd15c" : kind === "swift" ? "#7b4dff" : kind === "flyer" ? "#ff7a1a" : "#0b8aad";
+  const hair = kind === "gold" ? "#fff1a8" : kind === "bruiser" ? "#3a2210" : "#f3d27a";
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(w / 56, h / 64);
+  if (flat) ctx.scale(1, 0.45);
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.ellipse(28, 58, 22, 5, 0, 0, Math.PI * 2);
+    },
+    "#c48a2a",
+    "#14110d",
+    3,
+  );
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.roundRect(16, 28, 24, 22, 6);
+    },
+    "#e8b07a",
+    "#14110d",
+    3,
+  );
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.roundRect(16, 40, 24, 12, 4);
+    },
+    shorts,
+    "#14110d",
+    3,
+  );
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.arc(28, 18, 12, 0, Math.PI * 2);
+    },
+    "#f0c090",
+    "#14110d",
+    3,
+  );
+  ink(
+    ctx,
+    () => {
+      ctx.beginPath();
+      ctx.ellipse(28, 10, 13, 7, 0, 0, Math.PI * 2);
+    },
+    hair,
+    "#14110d",
+    3,
+  );
+  ctx.fillStyle = "#14110d";
+  ctx.fillRect(20, 16, 16, 4);
+  ctx.fillStyle = "#7de3f5";
+  ctx.fillRect(21, 17, 6, 2);
+  ctx.fillRect(29, 17, 6, 2);
+  ctx.fillStyle = "#fff6e4";
+  ctx.fillRect(24, 26, 8, 3);
   ctx.restore();
 }
 
@@ -263,10 +350,10 @@ export function paintOutlined(
 export function paintBoom(ctx: CanvasRenderingContext2D, x: number, y: number, p: number, big = false): void {
   const scale = big ? 1.7 : 1;
   const rings = [
-    ["#fff4c2", 38],
-    ["#ff9a1f", 30],
-    ["#e23d12", 20],
-    ["#2a1a0a", 10],
+    ["#e8ffff", 38],
+    ["#7de3f5", 30],
+    ["#1f8ad4", 20],
+    ["#0b3a5a", 10],
   ] as const;
   for (const [color, r] of rings) {
     ctx.fillStyle = color;

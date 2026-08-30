@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#1a4d2e" />
-    <title>Spud Squad</title>
+    <meta name="theme-color" content="#0b4a6a" />
+    <title>Splash Squad</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&display=swap"
       rel="stylesheet"
@@ -24,13 +24,13 @@
       <div class="stage">
         <canvas id="game"></canvas>
         <div id="hud" hidden>
-          <div class="hud-chip" id="world-chip">Potato Patch</div>
+          <div class="hud-chip" id="world-chip">Tide Pool</div>
           <div class="hud-chip" id="potato-chip">
-            <span id="potato-icon">🥔</span>
+            <span id="potato-icon">💧</span>
             <span id="potato-count">0</span>
           </div>
-          <div class="hud-chip" id="ammo-chip">THROW <span id="ammo-count">3</span></div>
-          <div class="hud-chip" id="weapon-chip">SPUD</div>
+          <div class="hud-chip" id="ammo-chip">TOSS <span id="ammo-count">3</span></div>
+          <div class="hud-chip" id="weapon-chip">TOSS</div>
           <div class="hud-chip" id="super-chip" hidden>SUPER 0</div>
           <div class="hud-chip" id="hearts"></div>
           <div class="hud-chip" id="score">000000</div>
@@ -48,9 +48,9 @@
 
         <div id="overlay" class="overlay">
           <section class="panel title-panel" data-screen="boot">
-            <p class="eyebrow">Spud Squad</p>
-            <h2>Loading the patch…</h2>
-            <p class="tagline">Cartoons, potatoes, and the King hat.</p>
+            <p class="eyebrow">Splash Squad</p>
+            <h2>Loading the beach…</h2>
+            <p class="tagline">Cartoons, water balloons, and evil surfer dudes.</p>
           </section>
 
           <section class="panel end-panel" data-screen="error" hidden>
@@ -61,11 +61,11 @@
 
           <section class="panel title-panel" data-screen="title" hidden>
             <img class="family-hero" src="/art/family.jpg" alt="Mallory, Luke, and Connor" />
-            <p class="eyebrow">Three kids. Six worlds. Bigger hats.</p>
-            <h1>Spud Squad</h1>
+            <p class="eyebrow">Three kids. Six beaches. Mean surfers.</p>
+            <h1>Splash Squad</h1>
             <p class="tagline">
-              Jump, stomp, and chuck potatoes. Some leprechauns take extra hits. Grab a potato gun
-              to spray, or a glowing super potato to nuke the screen. Pipey tags along.
+              Jump, stomp, and chuck water balloons. Some surfer dudes take extra hits. Grab a
+              balloon gun to spray, or a super soak to drench the screen. Pipey tags along.
             </p>
             <p class="best-line" id="best-line" hidden>Best run 000000</p>
             <button type="button" class="cta" id="btn-play" disabled>Play</button>
@@ -81,7 +81,7 @@
               <button type="button" class="kid-card" data-kid="boots">
                 <img src="/art/portrait-mallory.png" alt="Mallory" />
                 <strong>Mallory</strong>
-                <span>Air JUMP for a second leap. Highest bounce off a hat.</span>
+                <span>Air JUMP for a second leap. Highest bounce off a dude.</span>
               </button>
               <button type="button" class="kid-card" data-kid="ace">
                 <img src="/art/portrait-luke.png" alt="Luke" />
@@ -96,7 +96,7 @@
               <div class="kid-card dog-card">
                 <img id="dog-card-face" alt="Pipey" />
                 <strong>Pipey</strong>
-                <span>Family dog. Follows whoever runs, snags potatoes, barks hats flat.</span>
+                <span>Family dog. Follows whoever runs, snags balloons, barks dudes flat.</span>
               </div>
             </div>
           </section>
@@ -107,38 +107,38 @@
             <div class="world-list">
               <button type="button" class="world-card" data-world="0">
                 <span class="world-num">1</span>
-                <strong>Potato Patch</strong>
-                <span>Sunny fields, springs, and your first flying hat.</span>
+                <strong>Tide Pool</strong>
+                <span>Sunny sand, springs, and your first flying dude.</span>
                 <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="1">
                 <span class="world-num">2</span>
-                <strong>Lucky Mine</strong>
-                <span>Glow crystals, moving ledges, low ceilings.</span>
+                <strong>Boardwalk</strong>
+                <span>Night pier, neon, two-hit flyers.</span>
                 <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="2">
                 <span class="world-num">3</span>
-                <strong>Rainbow Keep</strong>
-                <span>Castle climb. The King takes four hits.</span>
+                <strong>Pipeline</strong>
+                <span>Big wave. The Surf King takes four hits.</span>
                 <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="3">
                 <span class="world-num">4</span>
-                <strong>Shamrock Bog</strong>
-                <span>Murky water and three-hit bruisers.</span>
+                <strong>Kelp Caves</strong>
+                <span>Green water and three-hit bruisers.</span>
                 <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="4">
                 <span class="world-num">5</span>
-                <strong>Gold Vault</strong>
-                <span>Armored hats. Four hits. Hold the gun.</span>
+                <strong>Gold Coast</strong>
+                <span>Gold shades. Four hits. Hold the gun.</span>
                 <em class="world-best" hidden></em>
               </button>
               <button type="button" class="world-card" data-world="5">
                 <span class="world-num">6</span>
-                <strong>Kingpin Castle</strong>
-                <span>Every hat at once. The King takes eight.</span>
+                <strong>Wipeout Peak</strong>
+                <span>Every dude at once. The Surf King takes eight.</span>
                 <em class="world-best" hidden></em>
               </button>
             </div>
@@ -147,15 +147,14 @@
 
           <section class="panel end-panel" data-screen="pause" hidden>
             <h2>Paused</h2>
-            <p class="tagline">Score and potatoes stay put. Thumbs off for a second.</p>
+            <p class="tagline">Score and balloons stay put. Thumbs off for a second.</p>
             <button type="button" class="cta" id="btn-resume">Keep running</button>
             <button type="button" class="ghost" id="btn-quit">World map</button>
           </section>
 
           <section class="panel end-panel" data-screen="clear" hidden>
-            <img class="end-art" src="/art/potato.png" alt="" />
             <h2>World clear!</h2>
-            <p class="tagline" id="clear-copy">Nice. The next world just unlocked.</p>
+            <p class="tagline" id="clear-copy">Nice. The next beach just unlocked.</p>
             <button type="button" class="cta" id="btn-next">Next world</button>
             <button type="button" class="ghost" id="btn-worlds">World map</button>
           </section>
@@ -164,15 +163,14 @@
             <img class="end-art kid-win" id="win-kid" src="/art/portrait-mallory.png" alt="" />
             <img class="family-hero win-family" src="/art/family.jpg" alt="" />
             <h2>Squad wins!</h2>
-            <p class="tagline" id="win-copy">The King is down. The potatoes are yours.</p>
+            <p class="tagline" id="win-copy">The Surf King is soaked. The beach is yours.</p>
             <button type="button" class="cta" id="btn-again">Run it from the start</button>
             <button type="button" class="ghost" id="btn-other">Pick another kid</button>
           </section>
 
           <section class="panel end-panel" data-screen="lose" hidden>
-            <img class="end-art lep" src="/art/leprechaun.png" alt="" />
-            <h2>Caught</h2>
-            <p class="tagline">Hats got the last laugh. Same world, same kid — or switch it up.</p>
+            <h2>Wiped out</h2>
+            <p class="tagline">The surfers got the last laugh. Same beach, same kid — or switch it up.</p>
             <button type="button" class="cta" id="btn-retry">Try this world again</button>
             <button type="button" class="ghost" id="btn-lose-pick">Change kid</button>
           </section>
@@ -185,12 +183,12 @@
           <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
         </div>
         <div class="jump-wrap">
-          <span class="jump-tip">J / F throw · G nuke</span>
+          <span class="jump-tip">J / F toss · G soak</span>
           <div class="action-row">
-            <button type="button" id="btn-super" class="super" aria-label="Super potato" hidden>
+            <button type="button" id="btn-super" class="super" aria-label="Super soak" hidden>
               SUPER
             </button>
-            <button type="button" id="btn-throw" class="throw" aria-label="Throw potato">SPUD</button>
+            <button type="button" id="btn-throw" class="throw" aria-label="Throw water balloon">TOSS</button>
             <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
           </div>
         </div>

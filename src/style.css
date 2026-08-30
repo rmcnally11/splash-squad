@@ -1,9 +1,9 @@
 :root {
-  --grass: #1a4d2e;
-  --grass-2: #143d24;
-  --lime: #8fd14f;
+  --grass: #0b4a6a;
+  --grass-2: #08344c;
+  --lime: #7de3f5;
   --barn: #c41e3a;
-  --sky: #9fd4e8;
+  --sky: #7ec8e3;
   --cream: #fff6e4;
   --ink: #1b2418;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -39,7 +39,7 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #0f2a1a;
+  background: #072838;
 }
 
 .stage {
@@ -103,7 +103,7 @@ body {
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
-  background: #245c38;
+  background: #0d5a7a;
 }
 
 .dog-card {
@@ -188,7 +188,7 @@ body {
   grid-template-rows: auto auto;
   column-gap: 10px;
   text-align: left;
-  background: #245c38;
+  background: #0d5a7a;
   border: 3px solid rgba(243, 210, 122, 0.45);
   border-radius: 18px;
   color: var(--cream);
@@ -379,7 +379,7 @@ h2 {
 .kid-card {
   flex: 0 0 min(78%, 240px);
   scroll-snap-align: center;
-  background: #245c38;
+  background: #0d5a7a;
   border: 3px solid rgba(243, 210, 122, 0.45);
   border-radius: 22px;
   color: var(--cream);
@@ -394,7 +394,7 @@ h2 {
   height: 168px;
   object-fit: contain;
   object-position: center;
-  background: linear-gradient(#245c38, #143d24);
+  background: linear-gradient(#0d5a7a, #08344c);
   border-radius: 14px;
 }
 
@@ -429,8 +429,8 @@ h2 {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 14px calc(12px + var(--safe-b));
-  background: linear-gradient(#245c38, #143d24);
-  border-top: 3px solid #4d8a22;
+  background: linear-gradient(#0d5a7a, #08344c);
+  border-top: 3px solid #3ec6e8;
   position: relative;
   z-index: 5;
 }
