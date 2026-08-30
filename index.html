@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0b4a6a" />
+    <title>Splash Squad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <div class="stage">
+        <canvas id="game"></canvas>
+        <div id="hud" hidden>
+          <div class="hud-chip" id="world-chip">Tide Pool</div>
+          <div class="hud-chip" id="potato-chip">
+            <span id="potato-icon">💧</span>
+            <span id="potato-count">0</span>
+          </div>
+          <div class="hud-chip" id="ammo-chip">TOSS <span id="ammo-count">3</span></div>
+          <div class="hud-chip" id="weapon-chip">TOSS</div>
+          <div class="hud-chip" id="super-chip" hidden>SUPER 0</div>
+          <div class="hud-chip" id="hearts"></div>
+          <div class="hud-chip" id="score">000000</div>
+          <div class="hud-chip kid-chip">
+            <img id="kid-face" alt="" />
+            <span id="kid-name">Mallory</span>
+          </div>
+          <div class="hud-chip dog-chip">
+            <img id="dog-face" alt="" />
+            <span>Pipey</span>
+          </div>
+          <button type="button" id="btn-pause" class="icon-btn" aria-label="Pause">❚❚</button>
+        </div>
+        <p id="trick-hint" hidden></p>
+
+        <div id="overlay" class="overlay">
+          <section class="panel title-panel" data-screen="boot">
+            <p class="eyebrow">Splash Squad</p>
+            <h2>Loading the beach…</h2>
+            <p class="tagline">Cartoons, water balloons, and evil surfer dudes.</p>
+          </section>
+
+          <section class="panel end-panel" data-screen="error" hidden>
+            <h2>Couldn’t start</h2>
+            <p class="tagline" id="error-copy">Something broke while loading the game.</p>
+            <button type="button" class="cta" id="btn-reload">Reload</button>
+          </section>
+
+          <section class="panel title-panel" data-screen="title" hidden>
+            <img class="family-hero" src="/art/family.jpg" alt="Mallory, Luke, and Connor" />
+            <p class="eyebrow">Three kids. Six beaches. Mean surfers.</p>
+            <h1>Splash Squad</h1>
+            <p class="tagline">
+              Jump, stomp, and chuck water balloons. Some surfer dudes take extra hits. Grab a
+              balloon gun to spray, or a super soak to drench the screen. Pipey tags along.
+            </p>
+            <p class="best-line" id="best-line" hidden>Best run 000000</p>
+            <button type="button" class="cta" id="btn-play" disabled>Play</button>
+          </section>
+
+          <section class="panel pick-panel" data-screen="pick" hidden>
+            <p class="eyebrow">Pick who runs</p>
+            <h2>The squad</h2>
+            <p class="tagline">
+              Mallory, Luke, and Connor from the family photo. Pipey tags along on every run.
+            </p>
+            <div class="cards">
+              <button type="button" class="kid-card" data-kid="boots">
+                <img src="/art/portrait-mallory.png" alt="Mallory" />
+                <strong>Mallory</strong>
+                <span>Air JUMP for a second leap. Highest bounce off a dude.</span>
+              </button>
+              <button type="button" class="kid-card" data-kid="ace">
+                <img src="/art/portrait-luke.png" alt="Luke" />
+                <strong>Luke</strong>
+                <span>Air JUMP to ground-pound. Extra heart. Long stomps.</span>
+              </button>
+              <button type="button" class="kid-card" data-kid="pip">
+                <img src="/art/portrait-connor.png" alt="Connor" />
+                <strong>Connor</strong>
+                <span>Air JUMP to dash. Fastest. Slides under low beams.</span>
+              </button>
+              <div class="kid-card dog-card">
+                <img id="dog-card-face" alt="Pipey" />
+                <strong>Pipey</strong>
+                <span>Family dog. Follows whoever runs, snags balloons, barks dudes flat.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel worlds-panel" data-screen="worlds" hidden>
+            <p class="eyebrow">Pick a world</p>
+            <h2>The run</h2>
+            <div class="world-list">
+              <button type="button" class="world-card" data-world="0">
+                <span class="world-num">1</span>
+                <strong>Tide Pool</strong>
+                <span>Sunny sand, springs, and your first flying dude.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="1">
+                <span class="world-num">2</span>
+                <strong>Boardwalk</strong>
+                <span>Night pier, neon, two-hit flyers.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="2">
+                <span class="world-num">3</span>
+                <strong>Pipeline</strong>
+                <span>Big wave. The Surf King takes four hits.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="3">
+                <span class="world-num">4</span>
+                <strong>Kelp Caves</strong>
+                <span>Green water and three-hit bruisers.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="4">
+                <span class="world-num">5</span>
+                <strong>Gold Coast</strong>
+                <span>Gold shades. Four hits. Hold the gun.</span>
+                <em class="world-best" hidden></em>
+              </button>
+              <button type="button" class="world-card" data-world="5">
+                <span class="world-num">6</span>
+                <strong>Wipeout Peak</strong>
+                <span>Every dude at once. The Surf King takes eight.</span>
+                <em class="world-best" hidden></em>
+              </button>
+            </div>
+            <button type="button" class="ghost" id="btn-back-pick">Change kid</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="pause" hidden>
+            <h2>Paused</h2>
+            <p class="tagline">Score and balloons stay put. Thumbs off for a second.</p>
+            <button type="button" class="cta" id="btn-resume">Keep running</button>
+            <button type="button" class="ghost" id="btn-quit">World map</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="clear" hidden>
+            <h2>World clear!</h2>
+            <p class="tagline" id="clear-copy">Nice. The next beach just unlocked.</p>
+            <button type="button" class="cta" id="btn-next">Next world</button>
+            <button type="button" class="ghost" id="btn-worlds">World map</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="win" hidden>
+            <img class="end-art kid-win" id="win-kid" src="/art/portrait-mallory.png" alt="" />
+            <img class="family-hero win-family" src="/art/family.jpg" alt="" />
+            <h2>Squad wins!</h2>
+            <p class="tagline" id="win-copy">The Surf King is soaked. The beach is yours.</p>
+            <button type="button" class="cta" id="btn-again">Run it from the start</button>
+            <button type="button" class="ghost" id="btn-other">Pick another kid</button>
+          </section>
+
+          <section class="panel end-panel" data-screen="lose" hidden>
+            <h2>Wiped out</h2>
+            <p class="tagline">The surfers got the last laugh. Same beach, same kid — or switch it up.</p>
+            <button type="button" class="cta" id="btn-retry">Try this world again</button>
+            <button type="button" class="ghost" id="btn-lose-pick">Change kid</button>
+          </section>
+        </div>
+      </div>
+
+      <div id="controls" hidden>
+        <div class="dpad">
+          <button type="button" id="btn-left" class="pad" aria-label="Left">◀</button>
+          <button type="button" id="btn-right" class="pad" aria-label="Right">▶</button>
+        </div>
+        <div class="jump-wrap">
+          <span class="jump-tip">J / F toss · G soak</span>
+          <div class="action-row">
+            <button type="button" id="btn-super" class="super" aria-label="Super soak" hidden>
+              SUPER
+            </button>
+            <button type="button" id="btn-throw" class="throw" aria-label="Throw water balloon">TOSS</button>
+            <button type="button" id="btn-jump" class="jump" aria-label="Jump">JUMP</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
