@@ -280,7 +280,7 @@ export function paintSurfer(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.ellipse(28, 58, 22, 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(28, 58, 24, 6, 0, 0, Math.PI * 2);
     },
     "#c48a2a",
     "#14110d",
@@ -290,7 +290,7 @@ export function paintSurfer(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.roundRect(16, 28, 24, 22, 6);
+      ctx.rect(17, 28, 22, 22);
     },
     "#e8b07a",
     "#14110d",
@@ -300,7 +300,7 @@ export function paintSurfer(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.roundRect(16, 40, 24, 12, 4);
+      ctx.rect(17, 40, 22, 12);
     },
     shorts,
     "#14110d",
@@ -310,7 +310,7 @@ export function paintSurfer(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.arc(28, 18, 12, 0, Math.PI * 2);
+      ctx.arc(28, 18, 13, 0, Math.PI * 2);
     },
     "#f0c090",
     "#14110d",
@@ -320,17 +320,17 @@ export function paintSurfer(
     ctx,
     () => {
       ctx.beginPath();
-      ctx.ellipse(28, 10, 13, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(28, 9, 14, 8, 0, 0, Math.PI * 2);
     },
     hair,
     "#14110d",
     3,
   );
   ctx.fillStyle = "#14110d";
-  ctx.fillRect(20, 16, 16, 4);
+  ctx.fillRect(18, 16, 20, 5);
   ctx.fillStyle = "#7de3f5";
-  ctx.fillRect(21, 17, 6, 2);
-  ctx.fillRect(29, 17, 6, 2);
+  ctx.fillRect(20, 17, 7, 3);
+  ctx.fillRect(29, 17, 7, 3);
   ctx.fillStyle = "#fff6e4";
   ctx.fillRect(24, 26, 8, 3);
   ctx.restore();
